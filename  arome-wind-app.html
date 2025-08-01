@@ -1,0 +1,1039 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2575.5">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  </style>
+</head>
+<body>
+<p class="p1">&lt;!DOCTYPE html&gt;</p>
+<p class="p1">&lt;html lang="en"&gt;</p>
+<p class="p1">&lt;head&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta charset="UTF-8"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;title&gt;AROME Wind Analysis&lt;/title&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"&gt;&lt;/script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.24.1/plotly.min.js"&gt;&lt;/script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>* {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>margin: 0;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>padding: 0;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>box-sizing: border-box;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>body {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>min-height: 100vh;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>color: #333;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.container {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>max-width: 1400px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>margin: 0 auto;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>padding: 20px;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.header {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>background: rgba(255, 255, 255, 0.95);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>backdrop-filter: blur(10px);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 15px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>padding: 30px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 30px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>text-align: center;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.header h1 {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>color: #2c3e50;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>font-size: 2.5rem;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 10px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>font-weight: 300;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.header p {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>color: #7f8c8d;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>font-size: 1.1rem;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.input-section {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>background: rgba(255, 255, 255, 0.95);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>backdrop-filter: blur(10px);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 15px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>padding: 30px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 30px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.input-grid {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>display: grid;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));</p>
+<p class="p1"><span class="Apple-converted-space">            </span>gap: 20px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 25px;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.input-group {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>display: flex;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>flex-direction: column;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.input-group label {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>font-weight: 600;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>color: #2c3e50;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 8px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>font-size: 0.9rem;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>text-transform: uppercase;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>letter-spacing: 0.5px;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.input-group input, .input-group select {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>padding: 12px 15px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>border: 2px solid #e0e6ed;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 8px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>font-size: 1rem;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>transition: all 0.3s ease;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>background: white;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.input-group input:focus, .input-group select:focus {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>outline: none;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>border-color: #3498db;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.fetch-btn {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>background: linear-gradient(135deg, #3498db, #2980b9);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>color: white;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>border: none;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>padding: 15px 30px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 8px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>font-size: 1.1rem;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>font-weight: 600;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>cursor: pointer;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>transition: all 0.3s ease;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>text-transform: uppercase;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>letter-spacing: 0.5px;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.fetch-btn:hover {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>transform: translateY(-2px);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>box-shadow: 0 10px 25px rgba(52, 152, 219, 0.3);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.fetch-btn:disabled {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>background: #95a5a6;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>cursor: not-allowed;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>transform: none;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>box-shadow: none;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.loading {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>display: none;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>text-align: center;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>padding: 20px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>color: white;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>font-size: 1.1rem;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.loading.show {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>display: block;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.spinner {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>border: 3px solid rgba(255, 255, 255, 0.3);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 50%;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>border-top: 3px solid white;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>width: 30px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>height: 30px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>animation: spin 1s linear infinite;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>margin: 0 auto 10px;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>@keyframes spin {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>0% { transform: rotate(0deg); }</p>
+<p class="p1"><span class="Apple-converted-space">            </span>100% { transform: rotate(360deg); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.error {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>background: #e74c3c;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>color: white;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>padding: 15px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 8px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>margin: 20px 0;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>display: none;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>white-space: pre-line;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>font-family: monospace;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>font-size: 0.9rem;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>max-height: 200px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>overflow-y: auto;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.error.show {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>display: block;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.results {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>display: none;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.results.show {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>display: block;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.info-panel {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>background: rgba(255, 255, 255, 0.95);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>backdrop-filter: blur(10px);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 15px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>padding: 25px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 30px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.info-grid {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>display: grid;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));</p>
+<p class="p1"><span class="Apple-converted-space">            </span>gap: 15px;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.info-item {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>text-align: center;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>padding: 15px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>background: #f8f9fa;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 8px;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.info-item .label {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>font-size: 0.8rem;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>color: #7f8c8d;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>text-transform: uppercase;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>font-weight: 600;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>letter-spacing: 0.5px;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.info-item .value {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>font-size: 1.2rem;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>color: #2c3e50;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>font-weight: 700;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>margin-top: 5px;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.chart-container {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>background: rgba(255, 255, 255, 0.95);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>backdrop-filter: blur(10px);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 15px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>padding: 30px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 30px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.chart-title {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>font-size: 1.4rem;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>font-weight: 600;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>color: #2c3e50;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 20px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>text-align: center;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.chart-wrapper {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>height: 600px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>position: relative;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.level-selector {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>display: flex;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>flex-wrap: wrap;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>gap: 10px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 20px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>justify-content: center;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.level-btn {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>padding: 8px 15px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>border: 2px solid #3498db;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>background: white;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>color: #3498db;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 20px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>cursor: pointer;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>font-size: 0.9rem;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>font-weight: 600;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>transition: all 0.3s ease;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.level-btn.active {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>background: #3498db;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>color: white;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.level-btn:hover {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>transform: translateY(-1px);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.wind-summary {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>display: grid;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));</p>
+<p class="p1"><span class="Apple-converted-space">            </span>gap: 20px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>margin-top: 20px;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.summary-card {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>background: #f8f9fa;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>padding: 20px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 10px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>text-align: center;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.summary-card h3 {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>color: #2c3e50;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 10px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>font-size: 1rem;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>.summary-card .value {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>font-size: 1.5rem;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>font-weight: 700;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>color: #3498db;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>@media (max-width: 768px) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>.header h1 {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>font-size: 2rem;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>.input-grid {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>grid-template-columns: 1fr;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>.chart-wrapper {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>height: 400px;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/style&gt;</p>
+<p class="p1">&lt;/head&gt;</p>
+<p class="p1">&lt;body&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="container"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="header"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;h1&gt;AROME Wind Analysis&lt;/h1&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;p&gt;High-resolution wind forecasts with vertical profile analysis up to 925 hPa&lt;/p&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="input-section"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="cors-warning" style="background: #f39c12; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;strong&gt;⚠️ CORS Notice:&lt;/strong&gt; This app may be blocked by browser security policies when accessing weather APIs directly.<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                </span>If you encounter "Failed to fetch" errors, try:</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;ul style="margin: 10px 0 0 20px;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;li&gt;Using a different browser (some are more permissive)&lt;/li&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;li&gt;Deploying this HTML file to a web server (GitHub Pages, Netlify, etc.)&lt;/li&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;li&gt;Using browser developer mode or CORS extensions&lt;/li&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;/ul&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="input-grid"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="input-group"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;label for="latitude"&gt;Latitude (DD MM.M N/S)&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;input type="text" id="latitude" placeholder="50 48.5N" value="50 48.5N"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;small style="color: #7f8c8d; margin-top: 5px; font-size: 0.8rem;"&gt;Format: DD MM.M N/S (e.g., 50 48.5N)&lt;/small&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="input-group"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;label for="longitude"&gt;Longitude (DDD MM.M E/W)&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;input type="text" id="longitude" placeholder="001 17.2W" value="001 17.2W"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;small style="color: #7f8c8d; margin-top: 5px; font-size: 0.8rem;"&gt;Format: DDD MM.M E/W (e.g., 001 17.2W)&lt;/small&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="input-group"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;label for="date"&gt;Date&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;input type="date" id="date"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="input-group"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;label for="timezone"&gt;Timezone&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;select id="timezone"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;option value="auto"&gt;Auto-detect&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;option value="UTC"&gt;UTC&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;option value="Europe/Paris"&gt;Europe/Paris&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;option value="Europe/London"&gt;Europe/London&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;option value="Europe/Berlin"&gt;Europe/Berlin&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;/select&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;button class="fetch-btn" onclick="fetchWindData()"&gt;Analyze Wind Data&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="loading"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="spinner"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div&gt;Fetching AROME wind data...&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="error"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div id="error-message"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="results"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="info-panel"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="info-grid"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="info-item"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;div class="label"&gt;Location&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;div class="value" id="location-info"&gt;--&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="info-item"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;div class="label"&gt;Elevation&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;div class="value" id="elevation-info"&gt;--&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="info-item"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;div class="label"&gt;Model&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;div class="value"&gt;AROME&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="info-item"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;div class="label"&gt;Resolution&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;div class="value"&gt;1.5 km&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="info-item"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;div class="label"&gt;Data Points&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;div class="value" id="data-points"&gt;--&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="info-item"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;div class="label"&gt;Time Range&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;div class="value" id="time-range"&gt;--&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="chart-container"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="chart-title"&gt;Wind Speed Profile - All Levels&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="level-selector" id="level-selector"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="chart-wrapper"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div id="windSpeedChart"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="chart-container"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="chart-title"&gt;Wind Direction Profile - All Levels&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="chart-wrapper"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div id="windDirectionChart"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="chart-container"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="chart-title"&gt;Wind Barbs Visualization&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="chart-wrapper"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div id="windBarbsChart"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="chart-container"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="chart-title"&gt;Vertical Wind Profile&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="chart-wrapper"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div id="verticalProfileChart"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let windData = null;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let selectedLevels = new Set();</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// Set today's date as default</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('date').valueAsDate = new Date();</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// Test coordinates that should work (Paris, France - good AROME coverage)</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('latitude').value = "48 51.4N";</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('longitude').value = "002 21.1E";</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// Available pressure levels up to 925 hPa</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const pressureLevels = [</p>
+<p class="p1"><span class="Apple-converted-space">            </span>{ level: '10m', param: 'wind_speed_10m', dir_param: 'wind_direction_10m', altitude: 10, color: '#e74c3c' },</p>
+<p class="p1"><span class="Apple-converted-space">            </span>{ level: '20m', param: 'wind_speed_20m', dir_param: 'wind_direction_20m', altitude: 20, color: '#f39c12' },</p>
+<p class="p1"><span class="Apple-converted-space">            </span>{ level: '50m', param: 'wind_speed_50m', dir_param: 'wind_direction_50m', altitude: 50, color: '#f1c40f' },</p>
+<p class="p1"><span class="Apple-converted-space">            </span>{ level: '100m', param: 'wind_speed_100m', dir_param: 'wind_direction_100m', altitude: 100, color: '#2ecc71' },</p>
+<p class="p1"><span class="Apple-converted-space">            </span>{ level: '150m', param: 'wind_speed_150m', dir_param: 'wind_direction_150m', altitude: 150, color: '#3498db' },</p>
+<p class="p1"><span class="Apple-converted-space">            </span>{ level: '200m', param: 'wind_speed_200m', dir_param: 'wind_direction_200m', altitude: 200, color: '#9b59b6' },</p>
+<p class="p1"><span class="Apple-converted-space">            </span>{ level: '1000hPa', param: 'wind_speed_1000hPa', dir_param: 'wind_direction_1000hPa', altitude: 110, color: '#1abc9c' },</p>
+<p class="p1"><span class="Apple-converted-space">            </span>{ level: '975hPa', param: 'wind_speed_975hPa', dir_param: 'wind_direction_975hPa', altitude: 320, color: '#34495e' },</p>
+<p class="p1"><span class="Apple-converted-space">            </span>{ level: '950hPa', param: 'wind_speed_950hPa', dir_param: 'wind_direction_950hPa', altitude: 500, color: '#e67e22' },</p>
+<p class="p1"><span class="Apple-converted-space">            </span>{ level: '925hPa', param: 'wind_speed_925hPa', dir_param: 'wind_direction_925hPa', altitude: 800, color: '#8e44ad' }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>];</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function showLoading() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.querySelector('.loading').classList.add('show');</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.querySelector('.error').classList.remove('show');</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.querySelector('.results').classList.remove('show');</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.querySelector('.fetch-btn').disabled = true;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function hideLoading() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.querySelector('.loading').classList.remove('show');</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.querySelector('.fetch-btn').disabled = false;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function showError(message) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('error-message').textContent = message;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.querySelector('.error').classList.add('show');</p>
+<p class="p1"><span class="Apple-converted-space">            </span>hideLoading();</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function showResults() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.querySelector('.results').classList.add('show');</p>
+<p class="p1"><span class="Apple-converted-space">            </span>hideLoading();</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function kmhToKnots(kmh) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>return kmh * 0.539957;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function parseCoordinate(coordStr, isLongitude = false) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>// Remove extra spaces and convert to uppercase</p>
+<p class="p1"><span class="Apple-converted-space">            </span>coordStr = coordStr.trim().toUpperCase();</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>// Regex for DD MM.M N/S/E/W format</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const regex = isLongitude<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                </span>? /^(\d{1,3})\s+(\d{1,2}(?:\.\d+)?)\s*([EW])$/</p>
+<p class="p1"><span class="Apple-converted-space">                </span>: /^(\d{1,2})\s+(\d{1,2}(?:\.\d+)?)\s*([NS])$/;</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>const match = coordStr.match(regex);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (!match) {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>throw new Error(`Invalid ${isLongitude ? 'longitude' : 'latitude'} format. Expected format: ${isLongitude ? 'DDD MM.M E/W' : 'DD MM.M N/S'}`);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>const degrees = parseInt(match[1]);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const minutes = parseFloat(match[2]);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const direction = match[3];</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>// Validate ranges</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (isLongitude) {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>if (degrees &gt; 180 || minutes &gt;= 60) {</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>throw new Error('Invalid longitude values. Degrees must be ≤180, minutes must be &lt;60');</p>
+<p class="p1"><span class="Apple-converted-space">                </span>}</p>
+<p class="p1"><span class="Apple-converted-space">            </span>} else {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>if (degrees &gt; 90 || minutes &gt;= 60) {</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>throw new Error('Invalid latitude values. Degrees must be ≤90, minutes must be &lt;60');</p>
+<p class="p1"><span class="Apple-converted-space">                </span>}</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>// Convert to decimal degrees</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let decimal = degrees + (minutes / 60);</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>// Apply direction</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (direction === 'S' || direction === 'W') {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>decimal = -decimal;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>return decimal;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>async function fetchWindData() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const latitudeStr = document.getElementById('latitude').value.trim();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const longitudeStr = document.getElementById('longitude').value.trim();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const date = document.getElementById('date').value;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const timezone = document.getElementById('timezone').value;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (!latitudeStr || !longitudeStr) {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>showError('Please enter valid latitude and longitude coordinates.');</p>
+<p class="p1"><span class="Apple-converted-space">                </span>return;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>let latitude, longitude;</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>try {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>latitude = parseCoordinate(latitudeStr, false);</p>
+<p class="p1"><span class="Apple-converted-space">                </span>longitude = parseCoordinate(longitudeStr, true);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>} catch (error) {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>showError(error.message);</p>
+<p class="p1"><span class="Apple-converted-space">                </span>return;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>showLoading();</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>// Try AROME API first, fallback to general forecast API</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const success = await tryAromeAPI(latitude, longitude, date, timezone) ||<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                           </span>await tryGeneralAPI(latitude, longitude, date, timezone);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (success) {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>processAndDisplayData();</p>
+<p class="p1"><span class="Apple-converted-space">                </span>showResults();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>async function tryAromeAPI(latitude, longitude, date, timezone) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>// Build hourly parameters for all levels</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const hourlyParams = [];</p>
+<p class="p1"><span class="Apple-converted-space">            </span>pressureLevels.forEach(level =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>hourlyParams.push(level.param);</p>
+<p class="p1"><span class="Apple-converted-space">                </span>hourlyParams.push(level.dir_param);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>});</p>
+<p class="p1"><span class="Apple-converted-space">            </span>hourlyParams.push('wind_gusts_10m');</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>// Try multiple approaches for CORS issues</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const corsProxies = [</p>
+<p class="p1"><span class="Apple-converted-space">                </span>'', // Direct call first</p>
+<p class="p1"><span class="Apple-converted-space">                </span>'https://api.allorigins.win/raw?url=', // CORS proxy</p>
+<p class="p1"><span class="Apple-converted-space">                </span>'https://corsproxy.io/?', // Alternative CORS proxy</p>
+<p class="p1"><span class="Apple-converted-space">            </span>];</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>for (let i = 0; i &lt; corsProxies.length; i++) {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>const proxy = corsProxies[i];</p>
+<p class="p2"><span class="Apple-converted-space">                </span></p>
+<p class="p1"><span class="Apple-converted-space">                </span>// Construct URL</p>
+<p class="p1"><span class="Apple-converted-space">                </span>const baseUrl = 'https://api.open-meteo.com/v1/meteofrance';</p>
+<p class="p1"><span class="Apple-converted-space">                </span>const params = [</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>`latitude=${latitude}`,</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>`longitude=${longitude}`,</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>`hourly=${hourlyParams.join(',')}`,</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>`timezone=${timezone}`,</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>`start_date=${date}`,</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>`end_date=${date}`,</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>`windspeed_unit=kmh`,</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>`format=json`</p>
+<p class="p1"><span class="Apple-converted-space">                </span>];</p>
+<p class="p2"><span class="Apple-converted-space">                </span></p>
+<p class="p1"><span class="Apple-converted-space">                </span>const fullUrl = proxy ? `${proxy}${encodeURIComponent(`${baseUrl}?${params.join('&amp;')}`)}` : `${baseUrl}?${params.join('&amp;')}`;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>console.log(`Trying AROME API (attempt ${i + 1}):`, fullUrl);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                </span>try {</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>const response = await fetch(fullUrl, {</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>method: 'GET',</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>...(proxy ? {} : { mode: 'cors' }),</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>headers: {</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>'Accept': 'application/json',</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>});</p>
+<p class="p2"><span class="Apple-converted-space">                    </span></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>console.log('AROME Response status:', response.status);</p>
+<p class="p2"><span class="Apple-converted-space">                    </span></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>if (!response.ok) {</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>console.error(`AROME API failed (attempt ${i + 1}):`, response.status, response.statusText);</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>continue;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>const data = await response.json();</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>console.log('AROME API Response received');</p>
+<p class="p2"><span class="Apple-converted-space">                    </span></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>if (data.error) {</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>console.error('AROME API error:', data.reason);</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>continue;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>// Check if we have any wind data</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>const hasData = hourlyParams.some(param =&gt;<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                        </span>data.hourly &amp;&amp; data.hourly[param] &amp;&amp;<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                        </span>data.hourly[param].some(val =&gt; val !== null)</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>if (!hasData) {</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>console.warn('No AROME data available');</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>continue;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>windData = data;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>console.log('AROME data successfully loaded');</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>return true;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                </span>} catch (error) {</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>console.error(`AROME API fetch error (attempt ${i + 1}):`, error);</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>continue;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>}</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>return false;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>async function tryGeneralAPI(latitude, longitude, date, timezone) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>// Try multiple approaches for CORS issues</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const corsProxies = [</p>
+<p class="p1"><span class="Apple-converted-space">                </span>'', // Direct call first</p>
+<p class="p1"><span class="Apple-converted-space">                </span>'https://api.allorigins.win/raw?url=', // CORS proxy</p>
+<p class="p1"><span class="Apple-converted-space">                </span>'https://corsproxy.io/?', // Alternative CORS proxy</p>
+<p class="p1"><span class="Apple-converted-space">            </span>];</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>for (let i = 0; i &lt; corsProxies.length; i++) {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>const proxy = corsProxies[i];</p>
+<p class="p2"><span class="Apple-converted-space">                </span></p>
+<p class="p1"><span class="Apple-converted-space">                </span>// Fallback to general forecast API with available wind parameters</p>
+<p class="p1"><span class="Apple-converted-space">                </span>const baseUrl = 'https://api.open-meteo.com/v1/forecast';</p>
+<p class="p1"><span class="Apple-converted-space">                </span>const params = [</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>`latitude=${latitude}`,</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>`longitude=${longitude}`,</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>`hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_100m,wind_direction_100m`,</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>`timezone=${timezone}`,</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>`start_date=${date}`,</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>`end_date=${date}`,</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>`windspeed_unit=kmh`,</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>`format=json`</p>
+<p class="p1"><span class="Apple-converted-space">                </span>];</p>
+<p class="p2"><span class="Apple-converted-space">                </span></p>
+<p class="p1"><span class="Apple-converted-space">                </span>const fullUrl = proxy ? `${proxy}${encodeURIComponent(`${baseUrl}?${params.join('&amp;')}`)}` : `${baseUrl}?${params.join('&amp;')}`;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>console.log(`Trying General API (attempt ${i + 1}):`, fullUrl);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                </span>try {</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>const response = await fetch(fullUrl, {</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>method: 'GET',</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>...(proxy ? {} : { mode: 'cors' }),</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>headers: {</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>'Accept': 'application/json',</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>});</p>
+<p class="p2"><span class="Apple-converted-space">                    </span></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>console.log('General API Response status:', response.status);</p>
+<p class="p2"><span class="Apple-converted-space">                    </span></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>if (!response.ok) {</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>const errorText = await response.text();</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>console.error(`General API failed (attempt ${i + 1}):`, response.status, errorText);</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>continue;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>const data = await response.json();</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>console.log('General API Response received');</p>
+<p class="p2"><span class="Apple-converted-space">                    </span></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>if (data.error) {</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>console.error('General API error:', data.reason);</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>continue;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>// Check if we have wind data</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>const hasWindData = data.hourly &amp;&amp;<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                        </span>(data.hourly.wind_speed_10m || data.hourly.wind_speed_100m) &amp;&amp;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>(data.hourly.wind_speed_10m.some(val =&gt; val !== null) ||<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                         </span>data.hourly.wind_speed_100m.some(val =&gt; val !== null));</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>if (!hasWindData) {</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>console.warn('No wind data available');</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>continue;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>windData = data;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>console.log('General API data successfully loaded');</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>return true;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                </span>} catch (error) {</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>console.error(`General API fetch error (attempt ${i + 1}):`, error);</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>continue;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>}</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>showError(`Failed to fetch wind data from all sources.\n\nThis is likely due to CORS restrictions in your browser.\n\nSolutions:\n1. Try using a different browser\n2. Disable browser security (for development only)\n3. Use a browser extension that disables CORS\n4. Run this from a web server instead of file://\n\nFor development, you can:\n- Use Chrome with --disable-web-security flag\n- Use Firefox and set security.fileuri.strict_origin_policy to false\n- Deploy this HTML file to a web server (GitHub Pages, Netlify, etc.)`);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>return false;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function processAndDisplayData() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>// Update info panel - convert decimal degrees back to DMS format for display</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const latDMS = decimalToDMS(windData.latitude, false);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const lonDMS = decimalToDMS(windData.longitude, true);</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('location-info').textContent = `${latDMS}, ${lonDMS}`;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('elevation-info').textContent =<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                </span>`${Math.round(windData.elevation)} m`;</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>const timeData = windData.hourly.time;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('data-points').textContent = `${timeData.length} hours`;</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>const startTime = new Date(timeData[0]).toLocaleDateString();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const endTime = new Date(timeData[timeData.length - 1]).toLocaleDateString();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('time-range').textContent =<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                </span>startTime === endTime ? startTime : `${startTime} - ${endTime}`;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>// Create level selector</p>
+<p class="p1"><span class="Apple-converted-space">            </span>createLevelSelector();</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>// Create charts</p>
+<p class="p1"><span class="Apple-converted-space">            </span>createWindSpeedChart();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>createWindDirectionChart();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>createWindBarbsChart();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>createVerticalProfileChart();</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function decimalToDMS(decimal, isLongitude) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const abs = Math.abs(decimal);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const degrees = Math.floor(abs);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const minutes = (abs - degrees) * 60;</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>let direction;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (isLongitude) {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>direction = decimal &gt;= 0 ? 'E' : 'W';</p>
+<p class="p1"><span class="Apple-converted-space">            </span>} else {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>direction = decimal &gt;= 0 ? 'N' : 'S';</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>const degreesPadded = isLongitude ? degrees.toString().padStart(3, '0') : degrees.toString().padStart(2, '0');</p>
+<p class="p1"><span class="Apple-converted-space">            </span>return `${degreesPadded} ${minutes.toFixed(1)}${direction}`;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function createLevelSelector() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const selector = document.getElementById('level-selector');</p>
+<p class="p1"><span class="Apple-converted-space">            </span>selector.innerHTML = '';</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>// Select all levels by default</p>
+<p class="p1"><span class="Apple-converted-space">            </span>selectedLevels.clear();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>pressureLevels.forEach(level =&gt; selectedLevels.add(level.level));</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>pressureLevels.forEach(level =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>const btn = document.createElement('button');</p>
+<p class="p1"><span class="Apple-converted-space">                </span>btn.className = 'level-btn active';</p>
+<p class="p1"><span class="Apple-converted-space">                </span>btn.textContent = level.level;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>btn.onclick = () =&gt; toggleLevel(level.level, btn);</p>
+<p class="p1"><span class="Apple-converted-space">                </span>selector.appendChild(btn);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>});</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function toggleLevel(level, btn) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (selectedLevels.has(level)) {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>selectedLevels.delete(level);</p>
+<p class="p1"><span class="Apple-converted-space">                </span>btn.classList.remove('active');</p>
+<p class="p1"><span class="Apple-converted-space">            </span>} else {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>selectedLevels.add(level);</p>
+<p class="p1"><span class="Apple-converted-space">                </span>btn.classList.add('active');</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p1"><span class="Apple-converted-space">            </span>createWindSpeedChart();</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function createWindSpeedChart() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const times = windData.hourly.time.map(t =&gt; new Date(t));</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const traces = [];</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>pressureLevels.forEach(level =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>if (!selectedLevels.has(level.level)) return;</p>
+<p class="p2"><span class="Apple-converted-space">                </span></p>
+<p class="p1"><span class="Apple-converted-space">                </span>const speeds = windData.hourly[level.param];</p>
+<p class="p1"><span class="Apple-converted-space">                </span>if (!speeds || speeds.every(s =&gt; s === null || s === undefined)) return;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                </span>// Convert km/h to knots</p>
+<p class="p1"><span class="Apple-converted-space">                </span>const speedsInKnots = speeds.map(s =&gt; s !== null &amp;&amp; s !== undefined ? kmhToKnots(s) : null);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                </span>traces.push({</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>x: times,</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>y: speedsInKnots,</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>type: 'scatter',</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>mode: 'lines+markers',</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>name: level.level,</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>line: { color: level.color, width: 2 },</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>marker: { size: 4 }</p>
+<p class="p1"><span class="Apple-converted-space">                </span>});</p>
+<p class="p1"><span class="Apple-converted-space">            </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>// If no traces, show message</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (traces.length === 0) {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>document.getElementById('windSpeedChart').innerHTML =<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>'&lt;div style="text-align: center; padding: 50px; color: #7f8c8d;"&gt;No wind speed data available for selected levels&lt;/div&gt;';</p>
+<p class="p1"><span class="Apple-converted-space">                </span>return;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>const layout = {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>title: 'Wind Speed vs Time',</p>
+<p class="p1"><span class="Apple-converted-space">                </span>xaxis: {<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>title: 'Time',</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>type: 'date'</p>
+<p class="p1"><span class="Apple-converted-space">                </span>},</p>
+<p class="p1"><span class="Apple-converted-space">                </span>yaxis: {<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>title: 'Wind Speed (knots)',</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>rangemode: 'tozero'</p>
+<p class="p1"><span class="Apple-converted-space">                </span>},</p>
+<p class="p1"><span class="Apple-converted-space">                </span>hovermode: 'x unified',</p>
+<p class="p1"><span class="Apple-converted-space">                </span>legend: {<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>orientation: 'h',</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>y: -0.2</p>
+<p class="p1"><span class="Apple-converted-space">                </span>},</p>
+<p class="p1"><span class="Apple-converted-space">                </span>margin: { t: 40, b: 80 }</p>
+<p class="p1"><span class="Apple-converted-space">            </span>};</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>Plotly.newPlot('windSpeedChart', traces, layout, { responsive: true });</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function createWindDirectionChart() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const times = windData.hourly.time.map(t =&gt; new Date(t));</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const traces = [];</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>pressureLevels.forEach(level =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>const directions = windData.hourly[level.dir_param];</p>
+<p class="p1"><span class="Apple-converted-space">                </span>if (!directions || directions.every(d =&gt; d === null || d === undefined)) return;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                </span>traces.push({</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>x: times,</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>y: directions,</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>type: 'scatter',</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>mode: 'markers',</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>name: level.level,</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>marker: {<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                        </span>color: level.color,<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                        </span>size: 6,</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>symbol: 'arrow-up',</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>angleref: 'previous',</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>angle: directions.map(d =&gt; d !== null &amp;&amp; d !== undefined ? d + 180 : null) // Rotate for wind direction</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">                </span>});</p>
+<p class="p1"><span class="Apple-converted-space">            </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>// If no traces, show message</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (traces.length === 0) {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>document.getElementById('windDirectionChart').innerHTML =<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>'&lt;div style="text-align: center; padding: 50px; color: #7f8c8d;"&gt;No wind direction data available&lt;/div&gt;';</p>
+<p class="p1"><span class="Apple-converted-space">                </span>return;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>const layout = {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>title: 'Wind Direction vs Time',</p>
+<p class="p1"><span class="Apple-converted-space">                </span>xaxis: {<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>title: 'Time',</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>type: 'date'</p>
+<p class="p1"><span class="Apple-converted-space">                </span>},</p>
+<p class="p1"><span class="Apple-converted-space">                </span>yaxis: {<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>title: 'Wind Direction (degrees)',</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>range: [0, 360],</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>tickvals: [0, 90, 180, 270, 360],</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>ticktext: ['N (0°)', 'E (90°)', 'S (180°)', 'W (270°)', 'N (360°)']</p>
+<p class="p1"><span class="Apple-converted-space">                </span>},</p>
+<p class="p1"><span class="Apple-converted-space">                </span>hovermode: 'x unified',</p>
+<p class="p1"><span class="Apple-converted-space">                </span>legend: {<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>orientation: 'h',</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>y: -0.2</p>
+<p class="p1"><span class="Apple-converted-space">                </span>},</p>
+<p class="p1"><span class="Apple-converted-space">                </span>margin: { t: 40, b: 80 }</p>
+<p class="p1"><span class="Apple-converted-space">            </span>};</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>Plotly.newPlot('windDirectionChart', traces, layout, { responsive: true });</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function createWindBarbsChart() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const times = windData.hourly.time.map(t =&gt; new Date(t));</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const traces = [];</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>// Create wind barbs for each hour at 10m level</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const speeds10m = windData.hourly['wind_speed_10m'];</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const directions10m = windData.hourly['wind_direction_10m'];</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (speeds10m &amp;&amp; directions10m) {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>const barbData = times.map((time, i) =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>if (speeds10m[i] === null || directions10m[i] === null) return null;</p>
+<p class="p2"><span class="Apple-converted-space">                    </span></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>const speedKnots = kmhToKnots(speeds10m[i]);</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>const dirRad = (directions10m[i] + 180) * Math.PI / 180; // Convert to radians, add 180 for wind direction</p>
+<p class="p2"><span class="Apple-converted-space">                    </span></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>// Calculate barb components</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>const length = Math.min(speedKnots / 50, 1); // Scale barb length</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>const dx = Math.sin(dirRad) * length;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>const dy = Math.cos(dirRad) * length;</p>
+<p class="p2"><span class="Apple-converted-space">                    </span></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>return {</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>time: time,</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>speed: speedKnots,</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>direction: directions10m[i],</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>dx: dx,</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>dy: dy</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>};</p>
+<p class="p1"><span class="Apple-converted-space">                </span>}).filter(d =&gt; d !== null);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                </span>// Create scatter plot with custom markers for wind barbs</p>
+<p class="p1"><span class="Apple-converted-space">                </span>traces.push({</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>x: barbData.map(d =&gt; d.time),</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>y: Array(barbData.length).fill(10), // Fixed height for 10m level</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>mode: 'markers',</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>marker: {</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>symbol: 'arrow-up',</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>size: barbData.map(d =&gt; Math.max(8, d.speed / 5)),</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>color: barbData.map(d =&gt; d.speed),</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>colorscale: 'Viridis',</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>showscale: true,</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>colorbar: {</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>title: 'Wind Speed (knots)',</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>x: 1.02</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>},</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>angle: barbData.map(d =&gt; d.direction + 180),</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>angleref: 'previous'</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>},</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>text: barbData.map(d =&gt;<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                        </span>`Time: ${d.time.toLocaleTimeString()}&lt;br&gt;` +</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>`Speed: ${d.speed.toFixed(1)} knots&lt;br&gt;` +</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>`Direction: ${d.direction.toFixed(0)}°`</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>),</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>hovertemplate: '%{text}&lt;extra&gt;&lt;/extra&gt;',</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>name: 'Wind Barbs (10m)'</p>
+<p class="p1"><span class="Apple-converted-space">                </span>});</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>const layout = {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>title: 'Wind Barbs - 10m Level',</p>
+<p class="p1"><span class="Apple-converted-space">                </span>xaxis: {<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>title: 'Time',</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>type: 'date'</p>
+<p class="p1"><span class="Apple-converted-space">                </span>},</p>
+<p class="p1"><span class="Apple-converted-space">                </span>yaxis: {<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>title: 'Height',</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>range: [5, 15],</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>showticklabels: false</p>
+<p class="p1"><span class="Apple-converted-space">                </span>},</p>
+<p class="p1"><span class="Apple-converted-space">                </span>showlegend: false,</p>
+<p class="p1"><span class="Apple-converted-space">                </span>margin: { t: 40, b: 80, r: 80 }</p>
+<p class="p1"><span class="Apple-converted-space">            </span>};</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>Plotly.newPlot('windBarbsChart', traces, layout, { responsive: true });</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function createVerticalProfileChart() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>// Take the first valid time point for vertical profile</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const timeIndex = 0;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const profileData = [];</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>pressureLevels.forEach(level =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>const speed = windData.hourly[level.param]?.[timeIndex];</p>
+<p class="p1"><span class="Apple-converted-space">                </span>const direction = windData.hourly[level.dir_param]?.[timeIndex];</p>
+<p class="p2"><span class="Apple-converted-space">                </span></p>
+<p class="p1"><span class="Apple-converted-space">                </span>if (speed !== null &amp;&amp; direction !== null) {</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>profileData.push({</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>level: level.level,</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>altitude: level.altitude,</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>speed: kmhToKnots(speed),</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>direction: direction,</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>color: level.color</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>});</p>
+<p class="p1"><span class="Apple-converted-space">                </span>}</p>
+<p class="p1"><span class="Apple-converted-space">            </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>const trace = {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>x: profileData.map(d =&gt; d.speed),</p>
+<p class="p1"><span class="Apple-converted-space">                </span>y: profileData.map(d =&gt; d.altitude),</p>
+<p class="p1"><span class="Apple-converted-space">                </span>type: 'scatter',</p>
+<p class="p1"><span class="Apple-converted-space">                </span>mode: 'lines+markers',</p>
+<p class="p1"><span class="Apple-converted-space">                </span>line: { color: '#3498db', width: 3 },</p>
+<p class="p1"><span class="Apple-converted-space">                </span>marker: {<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>size: 8,</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>color: profileData.map(d =&gt; d.speed),</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>colorscale: 'Viridis',</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>showscale: true,</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>colorbar: {</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>title: 'Wind Speed (knots)',</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>x: 1.02</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">                </span>},</p>
+<p class="p1"><span class="Apple-converted-space">                </span>text: profileData.map(d =&gt;<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>`Level: ${d.level}&lt;br&gt;` +</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>`Altitude: ${d.altitude} m&lt;br&gt;` +</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>`Speed: ${d.speed.toFixed(1)} knots&lt;br&gt;` +</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>`Direction: ${d.direction.toFixed(0)}°`</p>
+<p class="p1"><span class="Apple-converted-space">                </span>),</p>
+<p class="p1"><span class="Apple-converted-space">                </span>hovertemplate: '%{text}&lt;extra&gt;&lt;/extra&gt;',</p>
+<p class="p1"><span class="Apple-converted-space">                </span>name: 'Wind Profile'</p>
+<p class="p1"><span class="Apple-converted-space">            </span>};</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>const layout = {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>title: `Vertical Wind Profile - ${new Date(windData.hourly.time[timeIndex]).toLocaleString()}`,</p>
+<p class="p1"><span class="Apple-converted-space">                </span>xaxis: {<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>title: 'Wind Speed (knots)',</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>rangemode: 'tozero'</p>
+<p class="p1"><span class="Apple-converted-space">                </span>},</p>
+<p class="p1"><span class="Apple-converted-space">                </span>yaxis: {<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>title: 'Altitude (meters)',</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>type: 'log',</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>rangemode: 'tozero'</p>
+<p class="p1"><span class="Apple-converted-space">                </span>},</p>
+<p class="p1"><span class="Apple-converted-space">                </span>showlegend: false,</p>
+<p class="p1"><span class="Apple-converted-space">                </span>margin: { t: 40, b: 80, r: 80 }</p>
+<p class="p1"><span class="Apple-converted-space">            </span>};</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>Plotly.newPlot('verticalProfileChart', [trace], layout, { responsive: true });</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/script&gt;</p>
+<p class="p1">&lt;/body&gt;</p>
+<p class="p1">&lt;/html&gt;</p>
+</body>
+</html>
