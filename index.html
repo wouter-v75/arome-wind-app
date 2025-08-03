@@ -281,10 +281,32 @@
             font-size: 1rem;
         }
 
-        .summary-card .value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #3498db;
+        .time-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .time-selector label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .time-selector select {
+            padding: 8px 15px;
+            border: 2px solid #e0e6ed;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: white;
+            min-width: 200px;
+        }
+
+        .time-selector select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
         }
 
         @media (max-width: 768px) {
@@ -410,6 +432,19 @@
             </div>
 
             <div class="chart-container">
+                <div class="chart-title">Logarithmic Wind Profile</div>
+                <div class="time-selector">
+                    <label for="time-select">Select Time:</label>
+                    <select id="time-select" onchange="updateLogProfile()">
+                        <!-- Options will be populated by JavaScript -->
+                    </select>
+                </div>
+                <div class="chart-wrapper">
+                    <div id="logProfileChart"></div>
+                </div>
+            </div>
+
+            <div class="chart-container">
                 <div class="chart-title">Vertical Wind Profile</div>
                 <div class="chart-wrapper">
                     <div id="verticalProfileChart"></div>
@@ -421,6 +456,7 @@
     <script>
         let windData = null;
         let selectedLevels = new Set();
+        let selectedTimeIndex = 12; // Default to 12:00 (noon)
 
         // Set today's date as default
         document.getElementById('date').valueAsDate = new Date();
@@ -723,10 +759,14 @@
             // Create level selector
             createLevelSelector();
             
+            // Populate time selector
+            populateTimeSelector();
+            
             // Create charts
             createWindSpeedChart();
             createWindDirectionChart();
             createWindBarbsChart();
+            createLogarithmicProfile();
             createVerticalProfileChart();
         }
 
@@ -955,16 +995,66 @@
             Plotly.newPlot('windBarbsChart', traces, layout, { responsive: true });
         }
 
+        function populateTimeSelector() {
+            const timeSelect = document.getElementById('time-select');
+            timeSelect.innerHTML = '';
+            
+            if (!windData || !windData.hourly || !windData.hourly.time) {
+                return;
+            }
+            
+            windData.hourly.time.forEach((timeStr, index) => {
+                const date = new Date(timeStr);
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = date.toLocaleTimeString([], { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: false 
+                });
+                
+                // Default to 12:00 if available, otherwise first available time
+                if (date.getHours() === 12 && date.getMinutes() === 0) {
+                    option.selected = true;
+                    selectedTimeIndex = index;
+                } else if (index === 0 && selectedTimeIndex >= windData.hourly.time.length) {
+                    option.selected = true;
+                    selectedTimeIndex = 0;
+                }
+                
+                timeSelect.appendChild(option);
+            });
+            
+            // If no 12:00 time found, use middle of available times
+            if (selectedTimeIndex >= windData.hourly.time.length) {
+                selectedTimeIndex = Math.floor(windData.hourly.time.length / 2);
+                timeSelect.value = selectedTimeIndex;
+            }
+        }
+
+        function updateLogProfile() {
+            const timeSelect = document.getElementById('time-select');
+            selectedTimeIndex = parseInt(timeSelect.value);
+            createLogarithmicProfile();
+            createVerticalProfileChart();
+        }
+
         function createVerticalProfileChart() {
-            // Take the first valid time point for vertical profile
-            const timeIndex = 0;
+            if (!windData || !windData.hourly) {
+                document.getElementById('verticalProfileChart').innerHTML = 
+                    '<div style="text-align: center; padding: 50px; color: #7f8c8d;">No data available</div>';
+                return;
+            }
+
+            // Use selected time index for vertical profile
             const profileData = [];
+            const selectedTime = new Date(windData.hourly.time[selectedTimeIndex]);
 
             pressureLevels.forEach(level => {
-                const speed = windData.hourly[level.param]?.[timeIndex];
-                const direction = windData.hourly[level.dir_param]?.[timeIndex];
+                const speed = windData.hourly[level.param]?.[selectedTimeIndex];
+                const direction = windData.hourly[level.dir_param]?.[selectedTimeIndex];
                 
-                if (speed !== null && direction !== null) {
+                if (speed !== null && speed !== undefined && direction !== null && direction !== undefined) {
                     profileData.push({
                         level: level.level,
                         altitude: level.altitude,
@@ -975,12 +1065,21 @@
                 }
             });
 
+            if (profileData.length === 0) {
+                document.getElementById('verticalProfileChart').innerHTML = 
+                    '<div style="text-align: center; padding: 50px; color: #7f8c8d;">No wind profile data available for selected time</div>';
+                return;
+            }
+
+            // Sort by altitude
+            profileData.sort((a, b) => a.altitude - b.altitude);
+
             const trace = {
                 x: profileData.map(d => d.speed),
                 y: profileData.map(d => d.altitude),
                 type: 'scatter',
                 mode: 'lines+markers',
-                line: { color: '#3498db', width: 3 },
+                line: { color: '#3498db', width: 3, shape: 'spline' },
                 marker: { 
                     size: 8,
                     color: profileData.map(d => d.speed),
@@ -989,6 +1088,10 @@
                     colorbar: {
                         title: 'Wind Speed (knots)',
                         x: 1.02
+                    },
+                    line: {
+                        color: '#2c3e50',
+                        width: 2
                     }
                 },
                 text: profileData.map(d => 
@@ -1002,18 +1105,26 @@
             };
 
             const layout = {
-                title: `Vertical Wind Profile - ${new Date(windData.hourly.time[timeIndex]).toLocaleString()}`,
+                title: `Linear Vertical Wind Profile - ${selectedTime.toLocaleString()}`,
                 xaxis: { 
                     title: 'Wind Speed (knots)',
                     rangemode: 'tozero'
                 },
                 yaxis: { 
                     title: 'Altitude (meters)',
-                    type: 'log',
                     rangemode: 'tozero'
                 },
                 showlegend: false,
-                margin: { t: 40, b: 80, r: 80 }
+                margin: { t: 60, b: 80, r: 80 },
+                annotations: [{
+                    text: 'Linear scale shows absolute<br>altitude differences',
+                    showarrow: false,
+                    x: 0.02,
+                    y: 0.98,
+                    xref: 'paper',
+                    yref: 'paper',
+                    font: { size: 10, color: '#7f8c8d' }
+                }]
             };
 
             Plotly.newPlot('verticalProfileChart', [trace], layout, { responsive: true });
