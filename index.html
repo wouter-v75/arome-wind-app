@@ -1068,11 +1068,23 @@
                     name: level.level,
                     marker: { 
                         color: level.color, 
-                        size: 6,
+                        size: 15, // Increased from 6 to 15 for much better visibility
                         symbol: 'arrow-up',
                         angleref: 'previous',
-                        angle: directions.map(d => d !== null && d !== undefined ? d + 180 : null) // Rotate for wind direction
-                    }
+                        angle: directions.map(d => d !== null && d !== undefined ? d + 180 : null), // Rotate for wind direction
+                        line: {
+                            color: '#2c3e50', // Dark outline for better contrast
+                            width: 2 // Thick outline to make arrows stand out
+                        },
+                        opacity: 0.8 // Slight transparency to prevent overlap issues
+                    },
+                    text: directions.map((d, i) => 
+                        `Time: ${new Date(windData.hourly.time[i]).toLocaleTimeString()}<br>` +
+                        `Level: ${level.level}<br>` +
+                        `Direction: ${d !== null ? d.toFixed(0) + '°' : 'N/A'}<br>` +
+                        `Cardinal: ${degreesToCardinal(d)}`
+                    ),
+                    hovertemplate: '%{text}<extra></extra>'
                 });
             });
 
@@ -1095,15 +1107,34 @@
                     tickvals: [0, 90, 180, 270, 360],
                     ticktext: ['N (0°)', 'E (90°)', 'S (180°)', 'W (270°)', 'N (360°)']
                 },
-                hovermode: 'x unified',
+                hovermode: 'closest', // Changed from 'x unified' to 'closest' for better arrow interaction
                 legend: { 
                     orientation: 'h',
                     y: -0.2
                 },
-                margin: { t: 40, b: 80 }
+                margin: { t: 40, b: 80 },
+                annotations: [{
+                    text: 'Arrows point in wind direction<br>(where wind is blowing TO)',
+                    showarrow: false,
+                    x: 0.02,
+                    y: 0.98,
+                    xref: 'paper',
+                    yref: 'paper',
+                    font: { size: 10, color: '#7f8c8d' }
+                }]
             };
 
             await Plotly.newPlot('windDirectionChart', traces, layout, { responsive: true });
+        }
+
+        // Helper function to convert degrees to cardinal directions
+        function degreesToCardinal(degrees) {
+            if (degrees === null || degrees === undefined) return 'N/A';
+            
+            const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 
+                              'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+            const index = Math.round(degrees / 22.5) % 16;
+            return directions[index];
         }
 
         async function createWindBarbsChart() {
