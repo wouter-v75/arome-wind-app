@@ -1106,7 +1106,7 @@
         }
 
         async function createWindDirectionChart() {
-            debugLog('Creating wind direction chart...');
+            debugLog('Creating wind direction chart with wind barbs...');
             
             if (!windData || !windData.hourly) {
                 throw new Error('No wind data available');
@@ -1120,9 +1120,9 @@
                 const speeds = windData.hourly[level.param];
                 if (!directions || directions.every(d => d === null || d === undefined)) return;
 
-                // Create arrow stems and heads
-                const stemTraces = createWindArrowsWithStems(times, directions, speeds, level, levelIndex);
-                traces.push(...stemTraces);
+                // Create wind barbs (only every other hour)
+                const barbTraces = createWindBarbs(times, directions, speeds, level, levelIndex);
+                traces.push(...barbTraces);
             });
 
             // If no traces, show message
@@ -1133,14 +1133,14 @@
             }
 
             const layout = {
-                title: 'Wind Direction vs Time (Arrows with stems show wind direction)',
+                title: 'Wind Direction vs Time (Wind Barbs - Every 2 Hours)',
                 xaxis: { 
                     title: 'Time',
                     type: 'date'
                 },
                 yaxis: { 
                     title: 'Wind Direction (degrees)',
-                    range: [-20, 380], // Extended range to accommodate arrow stems
+                    range: [-30, 390], // Extended range to accommodate wind barbs
                     tickvals: [0, 90, 180, 270, 360],
                     ticktext: ['N (0°)', 'E (90°)', 'S (180°)', 'W (270°)', 'N (360°)']
                 },
@@ -1151,7 +1151,7 @@
                 },
                 margin: { t: 60, b: 80 },
                 annotations: [{
-                    text: 'Arrows with stems point in wind direction<br>(where wind is blowing TO)<br>Arrow length scaled by wind speed',
+                    text: 'Wind barbs show direction and speed<br>Staff points where wind blows TO<br>Short barb = 5kt, Long barb = 10kt, Pennant = 50kt',
                     showarrow: false,
                     x: 0.02,
                     y: 0.98,
@@ -1164,61 +1164,131 @@
             await Plotly.newPlot('windDirectionChart', traces, layout, { responsive: true });
         }
 
-        function createWindArrowsWithStems(times, directions, speeds, level, levelIndex) {
+        function createWindBarbs(times, directions, speeds, level, levelIndex) {
             const traces = [];
             
-            // Arrays for stem lines
-            const stemX = [];
-            const stemY = [];
+            // Arrays for staff lines
+            const staffX = [];
+            const staffY = [];
             
-            // Arrays for arrow heads
-            const headX = [];
-            const headY = [];
+            // Arrays for barbs
+            const barbX = [];
+            const barbY = [];
+            
+            // Arrays for pennants (50+ knot indicators)
+            const pennantX = [];
+            const pennantY = [];
             
             const hoverTexts = [];
 
             directions.forEach((direction, timeIndex) => {
+                // Only show every other hour (0, 2, 4, 6, 8, etc.)
+                if (timeIndex % 2 !== 0) return;
+                
                 if (direction === null || direction === undefined) return;
                 
-                const speed = speeds ? speeds[timeIndex] : 10;
+                const speed = speeds ? speeds[timeIndex] : 0;
                 const speedKnots = kmhToKnots(speed);
                 
-                // Scale arrow length based on wind speed
-                const arrowLength = Math.max(20, Math.min(60, speedKnots * 3));
-                
-                // Convert wind direction to show where wind is blowing TO
-                const adjustedDirection = (direction + 180) % 360;
-                const dirRad = adjustedDirection * Math.PI / 180;
+                // Skip if wind speed is too low to display meaningful barbs
+                if (speedKnots < 2.5) return;
                 
                 // Level offset to separate different altitude levels visually
-                const levelOffset = (levelIndex - 4.5) * 12;
+                const levelOffset = (levelIndex - 4.5) * 15;
                 
-                // Calculate stem coordinates
-                const stemStartY = direction + levelOffset;
-                const stemEndY = stemStartY + Math.cos(dirRad) * arrowLength;
+                // Wind barb staff points in the direction wind is blowing TO
+                const windDirection = direction; // Direction wind is coming FROM
+                const staffDirection = (windDirection + 180) % 360; // Direction wind is blowing TO
+                const staffRad = staffDirection * Math.PI / 180;
                 
-                // For time axis, create slight horizontal offset based on direction
-                const timeOffset = Math.sin(dirRad) * 1800000; // 30 minutes max offset
-                const stemStartX = times[timeIndex];
-                const stemEndX = new Date(times[timeIndex].getTime() + timeOffset);
+                // Staff length (base length)
+                const staffLength = 25;
                 
-                // Add stem coordinates
-                stemX.push(stemStartX, stemEndX, null); // null creates break between lines
-                stemY.push(stemStartY, stemEndY, null);
+                // Calculate staff coordinates
+                const staffStartY = direction + levelOffset;
+                const staffEndY = staffStartY + Math.cos(staffRad) * staffLength;
                 
-                // Create arrowhead (triangle)
-                const headSize = arrowLength * 0.4;
-                const headAngle1 = dirRad + Math.PI * 0.85; // Left wing
-                const headAngle2 = dirRad - Math.PI * 0.85; // Right wing
+                // Time position with slight offset for visibility
+                const timeOffset = Math.sin(staffRad) * 900000; // 15 minutes max offset
+                const staffStartX = times[timeIndex];
+                const staffEndX = new Date(times[timeIndex].getTime() + timeOffset);
                 
-                const head1X = new Date(stemEndX.getTime() + Math.sin(headAngle1) * headSize * 1800000);
-                const head1Y = stemEndY + Math.cos(headAngle1) * headSize;
-                const head2X = new Date(stemEndX.getTime() + Math.sin(headAngle2) * headSize * 1800000);
-                const head2Y = stemEndY + Math.cos(headAngle2) * headSize;
+                // Add staff line
+                staffX.push(staffStartX, staffEndX, null);
+                staffY.push(staffStartY, staffEndY, null);
                 
-                // Add triangle for arrowhead
-                headX.push(stemEndX, head1X, head2X, stemEndX, null);
-                headY.push(stemEndY, head1Y, head2Y, stemEndY, null);
+                // Calculate barbs based on wind speed
+                const barbSpacing = staffLength * 0.15; // Space between barbs
+                let remainingSpeed = Math.round(speedKnots / 5) * 5; // Round to nearest 5 knots
+                let barbPosition = 0.8; // Start barbs at 80% along the staff
+                
+                // Add pennants for 50+ knot winds
+                while (remainingSpeed >= 50) {
+                    const pennantBase = staffLength * barbPosition;
+                    const pennantBaseX = new Date(staffStartX.getTime() + 
+                        Math.sin(staffRad) * pennantBase * 900000 / staffLength);
+                    const pennantBaseY = staffStartY + Math.cos(staffRad) * pennantBase;
+                    
+                    // Create pennant triangle (50 knots)
+                    const pennantSize = 12;
+                    const perpRad = staffRad + Math.PI / 2; // Perpendicular to staff
+                    
+                    const pennantTipX = new Date(pennantBaseX.getTime() + 
+                        Math.sin(perpRad) * pennantSize * 900000 / staffLength);
+                    const pennantTipY = pennantBaseY + Math.cos(perpRad) * pennantSize;
+                    
+                    const pennantEndX = new Date(staffStartX.getTime() + 
+                        Math.sin(staffRad) * (pennantBase - barbSpacing) * 900000 / staffLength);
+                    const pennantEndY = staffStartY + Math.cos(staffRad) * (pennantBase - barbSpacing);
+                    
+                    // Add filled triangle for pennant
+                    pennantX.push(pennantBaseX, pennantTipX, pennantEndX, pennantBaseX, null);
+                    pennantY.push(pennantBaseY, pennantTipY, pennantEndY, pennantBaseY, null);
+                    
+                    remainingSpeed -= 50;
+                    barbPosition -= 0.2;
+                }
+                
+                // Add long barbs for 10 knot increments
+                while (remainingSpeed >= 10) {
+                    const barbBase = staffLength * barbPosition;
+                    const barbBaseX = new Date(staffStartX.getTime() + 
+                        Math.sin(staffRad) * barbBase * 900000 / staffLength);
+                    const barbBaseY = staffStartY + Math.cos(staffRad) * barbBase;
+                    
+                    // Long barb (10 knots)
+                    const barbLength = 10;
+                    const perpRad = staffRad + Math.PI / 2; // Perpendicular to staff
+                    
+                    const barbTipX = new Date(barbBaseX.getTime() + 
+                        Math.sin(perpRad) * barbLength * 900000 / staffLength);
+                    const barbTipY = barbBaseY + Math.cos(perpRad) * barbLength;
+                    
+                    barbX.push(barbBaseX, barbTipX, null);
+                    barbY.push(barbBaseY, barbTipY, null);
+                    
+                    remainingSpeed -= 10;
+                    barbPosition -= 0.15;
+                }
+                
+                // Add short barb for 5 knot increment
+                if (remainingSpeed >= 5) {
+                    const barbBase = staffLength * barbPosition;
+                    const barbBaseX = new Date(staffStartX.getTime() + 
+                        Math.sin(staffRad) * barbBase * 900000 / staffLength);
+                    const barbBaseY = staffStartY + Math.cos(staffRad) * barbBase;
+                    
+                    // Short barb (5 knots)
+                    const barbLength = 6;
+                    const perpRad = staffRad + Math.PI / 2;
+                    
+                    const barbTipX = new Date(barbBaseX.getTime() + 
+                        Math.sin(perpRad) * barbLength * 900000 / staffLength);
+                    const barbTipY = barbBaseY + Math.cos(perpRad) * barbLength;
+                    
+                    barbX.push(barbBaseX, barbTipX, null);
+                    barbY.push(barbBaseY, barbTipY, null);
+                }
                 
                 // Hover information
                 hoverTexts.push(
@@ -1230,39 +1300,88 @@
                 );
             });
 
-            // Create stem trace (thick lines)
-            if (stemX.length > 0) {
+            // Create staff trace (main wind barb shafts)
+            if (staffX.length > 0) {
                 traces.push({
-                    x: stemX,
-                    y: stemY,
+                    x: staffX,
+                    y: staffY,
                     type: 'scatter',
                     mode: 'lines',
-                    name: `${level.level} stems`,
+                    name: `${level.level} staff`,
                     line: {
                         color: level.color,
-                        width: 4 // Thick stems for visibility
+                        width: 3
                     },
                     showlegend: false,
                     hoverinfo: 'skip'
                 });
             }
 
-            // Create arrowhead trace (filled triangles)
-            if (headX.length > 0) {
+            // Create barb trace (speed indicators)
+            if (barbX.length > 0) {
                 traces.push({
-                    x: headX,
-                    y: headY,
+                    x: barbX,
+                    y: barbY,
                     type: 'scatter',
                     mode: 'lines',
-                    fill: 'toself', // Fill each triangle
-                    fillcolor: level.color,
-                    name: level.level,
+                    name: `${level.level} barbs`,
                     line: {
                         color: level.color,
                         width: 2
                     },
-                    opacity: 0.9,
-                    text: hoverTexts.flatMap(text => [text, text, text, text, null]), // Repeat for each triangle point
+                    showlegend: false,
+                    hoverinfo: 'skip'
+                });
+            }
+
+            // Create pennant trace (50+ knot indicators)
+            if (pennantX.length > 0) {
+                traces.push({
+                    x: pennantX,
+                    y: pennantY,
+                    type: 'scatter',
+                    mode: 'lines',
+                    fill: 'toself',
+                    fillcolor: level.color,
+                    name: `${level.level} pennants`,
+                    line: {
+                        color: level.color,
+                        width: 2
+                    },
+                    opacity: 0.8,
+                    showlegend: false,
+                    hoverinfo: 'skip'
+                });
+            }
+
+            // Create invisible hover points for better interaction
+            if (hoverTexts.length > 0) {
+                const hoverTimes = [];
+                const hoverDirections = [];
+                
+                directions.forEach((direction, timeIndex) => {
+                    if (timeIndex % 2 !== 0) return;
+                    if (direction === null || direction === undefined) return;
+                    const speed = speeds ? speeds[timeIndex] : 0;
+                    if (kmhToKnots(speed) < 2.5) return;
+                    
+                    hoverTimes.push(times[timeIndex]);
+                    hoverDirections.push(direction + (levelIndex - 4.5) * 15);
+                });
+                
+                traces.push({
+                    x: hoverTimes,
+                    y: hoverDirections,
+                    type: 'scatter',
+                    mode: 'markers',
+                    name: level.level,
+                    marker: {
+                        color: level.color,
+                        size: 8,
+                        symbol: 'circle',
+                        opacity: 0.1
+                    },
+                    text: hoverTexts,
                     hovertemplate: '%{text}<extra></extra>',
                     showlegend: true
                 });
