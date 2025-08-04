@@ -434,16 +434,9 @@
             </div>
 
             <div class="chart-container">
-                <div class="chart-title">Wind Direction Profile - All Levels</div>
+                <div class="chart-title">Boundary Layer Height (HPBL) from GFS Model</div>
                 <div class="chart-wrapper">
-                    <div id="windDirectionChart"></div>
-                </div>
-            </div>
-
-            <div class="chart-container">
-                <div class="chart-title">Wind Barbs Visualization</div>
-                <div class="chart-wrapper">
-                    <div id="windBarbsChart"></div>
+                    <div id="boundaryLayerChart"></div>
                 </div>
             </div>
 
@@ -471,6 +464,7 @@
 
     <script>
         let windData = null;
+        let boundaryLayerData = null;
         let selectedLevels = new Set();
         let selectedTimeIndex = 12; // Default to 12:00 (noon)
 
@@ -620,16 +614,20 @@
 
             try {
                 // Try APIs with better error handling and fallback to demo data
-                const success = await tryAromeAPI(latitude, longitude, date, timezone) || 
-                               await tryGeneralAPI(latitude, longitude, date, timezone) ||
-                               await loadDemoData(latitude, longitude, date, timezone);
+                const windSuccess = await tryAromeAPI(latitude, longitude, date, timezone) || 
+                                   await tryGeneralAPI(latitude, longitude, date, timezone) ||
+                                   await loadDemoData(latitude, longitude, date, timezone);
 
-                if (success) {
-                    debugLog('Data fetch successful, processing...');
+                // Also fetch boundary layer height from GFS
+                const boundaryLayerSuccess = await tryGFSBoundaryLayerAPI(latitude, longitude, date, timezone) ||
+                                           await loadDemoBoundaryLayerData(latitude, longitude, date, timezone);
+
+                if (windSuccess && boundaryLayerSuccess) {
+                    debugLog('Both wind and boundary layer data fetch successful, processing...');
                     await processAndDisplayData();
                     showResults();
                 } else {
-                    throw new Error('All API attempts failed and demo data could not be loaded');
+                    throw new Error('Failed to fetch required weather data');
                 }
             } catch (error) {
                 debugLog('Critical error in fetchWindData', error);
@@ -801,7 +799,200 @@
             }
         }
 
+        async function tryGFSBoundaryLayerAPI(latitude, longitude, date, timezone) {
+            debugLog('Trying GFS API for boundary layer height...');
+            
+            const baseUrl = 'https://api.open-meteo.com/v1/gfs';
+            const params = [
+                `latitude=${latitude}`,
+                `longitude=${longitude}`,
+                `hourly=boundary_layer_height,temperature_2m,pressure_msl`,
+                `timezone=${timezone}`,
+                `start_date=${date}`,
+                `end_date=${date}`,
+                `format=json`
+            ];
+            
+            const fullUrl = `${baseUrl}?${params.join('&')}`;
+            debugLog('GFS API URL', fullUrl);
+
+            try {
+                const response = await fetch(fullUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                    }
+                });
+                
+                debugLog('GFS Response status', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    debugLog('GFS API failed', { status: response.status, error: errorText });
+                    showError(`GFS API Error (${response.status}): ${response.statusText}\nDetails: ${errorText}\nURL: ${fullUrl}`);
+                    return false;
+                }
+
+                const data = await response.json();
+                debugLog('GFS API Response received', Object.keys(data));
+                
+                if (data.error) {
+                    debugLog('GFS API error', data.reason);
+                    showError(`GFS API Error: ${data.reason}\nURL: ${fullUrl}`);
+                    return false;
+                }
+
+                // Check if boundary layer height data is available
+                if (!data.hourly || !data.hourly.boundary_layer_height || 
+                    data.hourly.boundary_layer_height.every(val => val === null)) {
+                    debugLog('No boundary layer height data available from GFS');
+                    showError(`No boundary layer height data available from GFS.\nLocation: ${latitude}°, ${longitude}°\nDate: ${date}`);
+                    return false;
+                }
+
+                boundaryLayerData = data;
+                debugLog('GFS boundary layer data successfully loaded');
+                return true;
+
+            } catch (error) {
+                debugLog('GFS API fetch error', error);
+                showError(`GFS API Network Error: ${error.message}\nURL: ${fullUrl}\nThis may be due to:\n- Network connectivity issues\n- API server problems\n\nTrying demo data...`);
+                return false;
+            }
+        }
+
         async function tryGeneralAPI(latitude, longitude, date, timezone) {
+            debugLog('Trying General Forecast API...');
+            
+            // Simplified general forecast API - using only well-supported parameters
+            const baseUrl = 'https://api.open-meteo.com/v1/forecast';
+            const params = [
+                `latitude=${latitude}`,
+                `longitude=${longitude}`,
+                `hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_80m,wind_direction_80m,wind_speed_120m,wind_direction_120m,wind_speed_180m,wind_direction_180m`,
+                `timezone=${timezone}`,
+                `start_date=${date}`,
+                `end_date=${date}`,
+                `windspeed_unit=kmh`,
+                `format=json`
+            ];
+            
+            const fullUrl = `${baseUrl}?${params.join('&')}`;
+            debugLog('General API URL', fullUrl);
+
+            try {
+                const response = await fetch(fullUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                    }
+                });
+                
+                debugLog('General API Response status', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    debugLog('General API failed', { status: response.status, error: errorText });
+                    showError(`General Forecast API Error (${response.status}): ${response.statusText}\nDetails: ${errorText}\nURL: ${fullUrl}`);
+                    return false;
+                }
+
+                const data = await response.json();
+                debugLog('General API Response received', Object.keys(data));
+                
+                if (data.error) {
+                    debugLog('General API error', data.reason);
+                    showError(`General Forecast API Error: ${data.reason}\nURL: ${fullUrl}`);
+                    return false;
+                }
+
+                // Check available wind data and map to expected parameters
+                const windMapping = [];
+                if (data.hourly.wind_speed_10m && data.hourly.wind_speed_10m.some(val => val !== null)) {
+                    windMapping.push('10m wind available');
+                }
+                if (data.hourly.wind_speed_80m) {
+                    data.hourly.wind_speed_100m = data.hourly.wind_speed_80m;
+                    data.hourly.wind_direction_100m = data.hourly.wind_direction_80m;
+                    windMapping.push('80m → 100m mapping');
+                }
+                if (data.hourly.wind_speed_120m) {
+                    windMapping.push('120m wind available');
+                }
+                if (data.hourly.wind_speed_180m) {
+                    data.hourly.wind_speed_200m = data.hourly.wind_speed_180m;
+                    data.hourly.wind_direction_200m = data.hourly.wind_direction_180m;
+                    windMapping.push('180m → 200m mapping');
+                }
+
+                debugLog('Wind data mapping', windMapping);
+
+                if (windMapping.length === 0) {
+                    showError(`No wind data available from General Forecast API.\nLocation: ${latitude}°, ${longitude}°\nDate: ${date}\nResponse data keys: ${Object.keys(data.hourly || {}).join(', ')}\n\nFalling back to demo data...`);
+                    return false;
+                }
+
+                windData = data;
+                debugLog('General API data successfully loaded', windMapping);
+                return true;
+
+            } catch (error) {
+                debugLog('General API fetch error', error);
+                showError(`General Forecast API Network Error: ${error.message}\nURL: ${fullUrl}\nThis may be due to:\n- Network connectivity issues\n- API server problems\n- Invalid request parameters\n\nFalling back to demo data...`);
+                return false;
+            }
+        }
+            debugLog('Loading demo boundary layer height data...');
+            
+            try {
+                // Generate realistic demo boundary layer height data
+                const startDate = new Date(date + 'T00:00:00');
+                const hours = 24;
+                
+                const timeArray = [];
+                const boundaryLayerHeights = [];
+                const temperatures = [];
+                const pressures = [];
+                
+                // Typical boundary layer height patterns
+                const baseBLH = 500 + Math.random() * 300; // 500-800m base height
+                
+                for (let i = 0; i < hours; i++) {
+                    const currentTime = new Date(startDate.getTime() + i * 60 * 60 * 1000);
+                    timeArray.push(currentTime.toISOString());
+                    
+                    // Simulate diurnal cycle: low at night, high in afternoon
+                    const hourFactor = Math.max(0.3, Math.sin((i - 6) * Math.PI / 12)); // Peak at 18:00 (hour 12)
+                    const seasonalFactor = 0.8 + Math.random() * 0.4; // ±20% daily variation
+                    
+                    const blh = baseBLH * (0.5 + hourFactor * 1.5) * seasonalFactor;
+                    boundaryLayerHeights.push(Math.max(100, blh)); // Minimum 100m
+                    
+                    // Mock temperature and pressure for completeness
+                    temperatures.push(15 + Math.sin((i - 6) * Math.PI / 12) * 8 + (Math.random() - 0.5) * 2);
+                    pressures.push(1013 + (Math.random() - 0.5) * 10);
+                }
+                
+                boundaryLayerData = {
+                    latitude: latitude,
+                    longitude: longitude,
+                    elevation: 50 + Math.random() * 100,
+                    timezone: timezone === 'auto' ? 'Europe/Paris' : timezone,
+                    hourly: {
+                        time: timeArray,
+                        boundary_layer_height: boundaryLayerHeights,
+                        temperature_2m: temperatures,
+                        pressure_msl: pressures
+                    }
+                };
+                
+                debugLog('Demo boundary layer data generated successfully');
+                return true;
+            } catch (error) {
+                debugLog('Error generating demo boundary layer data', error);
+                return false;
+            }
+        }
             debugLog('Trying General Forecast API...');
             
             // Simplified general forecast API - using only well-supported parameters
@@ -912,8 +1103,7 @@
                 // Create charts with error handling
                 debugLog('Creating charts...');
                 await safelyCreateChart('windSpeedChart', createWindSpeedChart);
-                await safelyCreateChart('windDirectionChart', createWindDirectionChart);
-                await safelyCreateChart('windBarbsChart', createWindBarbsChart);
+                await safelyCreateChart('boundaryLayerChart', createBoundaryLayerChart);
                 await safelyCreateChart('logProfileChart', createLogarithmicProfile);
                 await safelyCreateChart('verticalProfileChart', createVerticalProfileChart);
                 
@@ -1061,9 +1251,9 @@
                 const speeds = windData.hourly[level.param]; // Get wind speeds for scaling
                 if (!directions || directions.every(d => d === null || d === undefined)) return;
 
-                // Create custom arrows with stems using line traces
-                const arrowTraces = createWindArrowsWithStems(times, directions, speeds, level, levelIndex);
-                traces.push(...arrowTraces);
+                // Create wind barbs (only every other hour)
+                const barbTraces = createWindBarbs(times, directions, speeds, level, levelIndex);
+                traces.push(...barbTraces);
             });
 
             // If no traces, show message
