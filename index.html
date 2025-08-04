@@ -309,6 +309,18 @@
             box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
         }
 
+        .debug-info {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 0.8rem;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 2rem;
@@ -462,6 +474,24 @@
         let selectedLevels = new Set();
         let selectedTimeIndex = 12; // Default to 12:00 (noon)
 
+        // Debug logging function
+        function debugLog(message, data = null) {
+            console.log(`[AROME Debug] ${message}`, data || '');
+            
+            // Optional: show debug info in UI for troubleshooting
+            if (window.showDebugInfo) {
+                const debugDiv = document.querySelector('.debug-info') || createDebugDiv();
+                debugDiv.innerHTML += `${new Date().toLocaleTimeString()}: ${message}\n`;
+            }
+        }
+
+        function createDebugDiv() {
+            const div = document.createElement('div');
+            div.className = 'debug-info';
+            document.querySelector('.container').appendChild(div);
+            return div;
+        }
+
         // Set today's date as default
         document.getElementById('date').valueAsDate = new Date();
 
@@ -485,6 +515,7 @@
         ];
 
         function showLoading() {
+            debugLog('Showing loading indicator');
             document.querySelector('.loading').classList.add('show');
             document.querySelector('.error').classList.remove('show');
             document.querySelector('.results').classList.remove('show');
@@ -492,11 +523,13 @@
         }
 
         function hideLoading() {
+            debugLog('Hiding loading indicator');
             document.querySelector('.loading').classList.remove('show');
             document.querySelector('.fetch-btn').disabled = false;
         }
 
         function showError(message) {
+            debugLog('Showing error', message);
             document.getElementById('error-message').innerHTML = message.replace(/\n/g, '<br>');
             document.querySelector('.error').classList.add('show');
             hideLoading();
@@ -510,6 +543,7 @@
         }
 
         function showResults() {
+            debugLog('Showing results');
             document.querySelector('.results').classList.add('show');
             hideLoading();
         }
@@ -559,6 +593,8 @@
         }
 
         async function fetchWindData() {
+            debugLog('Starting wind data fetch');
+            
             const latitudeStr = document.getElementById('latitude').value.trim();
             const longitudeStr = document.getElementById('longitude').value.trim();
             const date = document.getElementById('date').value;
@@ -574,6 +610,7 @@
             try {
                 latitude = parseCoordinate(latitudeStr, false);
                 longitude = parseCoordinate(longitudeStr, true);
+                debugLog('Parsed coordinates', { latitude, longitude });
             } catch (error) {
                 showError(error.message);
                 return;
@@ -581,93 +618,108 @@
 
             showLoading();
 
-            // Try APIs with better error handling and fallback to demo data
-            const success = await tryAromeAPI(latitude, longitude, date, timezone) || 
-                           await tryGeneralAPI(latitude, longitude, date, timezone) ||
-                           await loadDemoData(latitude, longitude, date, timezone);
+            try {
+                // Try APIs with better error handling and fallback to demo data
+                const success = await tryAromeAPI(latitude, longitude, date, timezone) || 
+                               await tryGeneralAPI(latitude, longitude, date, timezone) ||
+                               await loadDemoData(latitude, longitude, date, timezone);
 
-            if (success) {
-                processAndDisplayData();
-                showResults();
+                if (success) {
+                    debugLog('Data fetch successful, processing...');
+                    await processAndDisplayData();
+                    showResults();
+                } else {
+                    throw new Error('All API attempts failed and demo data could not be loaded');
+                }
+            } catch (error) {
+                debugLog('Critical error in fetchWindData', error);
+                showError(`Critical Error: ${error.message}\n\nPlease refresh the page and try again.`);
             }
         }
 
         async function loadDemoData(latitude, longitude, date, timezone) {
-            console.log('Loading demo data due to API failures...');
+            debugLog('Loading demo data due to API failures...');
             
-            showError(`⚠️ Using Demo Data - API Issues Detected\n\nReal weather APIs failed to respond. This could be due to:\n• API server issues\n• Network connectivity problems\n• Invalid API parameters\n• Location outside model coverage\n\nCurrently showing: Realistic simulated wind data for demonstration purposes.\n\nFor real data, ensure:\n1. Stable internet connection\n2. Valid GPS coordinates\n3. Date within forecast range\n4. Try again in a few minutes`);
-            
-            // Generate realistic demo wind data for the requested location and date
-            const startDate = new Date(date + 'T00:00:00');
-            const hours = 24;
-            
-            // Create realistic wind patterns based on location and time
-            const baseWindSpeed = 8 + Math.random() * 6; // 8-14 knots base
-            const baseDirection = Math.random() * 360;
-            
-            const timeArray = [];
-            const windSpeed10m = [];
-            const windDirection10m = [];
-            const windGusts10m = [];
-            const windSpeed100m = [];
-            const windDirection100m = [];
-            const windSpeed120m = [];
-            const windDirection120m = [];
-            
-            for (let i = 0; i < hours; i++) {
-                const currentTime = new Date(startDate.getTime() + i * 60 * 60 * 1000);
-                timeArray.push(currentTime.toISOString());
+            try {
+                showError(`⚠️ Using Demo Data - API Issues Detected\n\nReal weather APIs failed to respond. This could be due to:\n• API server issues\n• Network connectivity problems\n• Invalid API parameters\n• Location outside model coverage\n\nCurrently showing: Realistic simulated wind data for demonstration purposes.\n\nFor real data, ensure:\n1. Stable internet connection\n2. Valid GPS coordinates\n3. Date within forecast range\n4. Try again in a few minutes`);
                 
-                // Simulate daily wind pattern with some randomness
-                const hourFactor = 1 + 0.3 * Math.sin((i - 6) * Math.PI / 12); // Peak afternoon
-                const randomFactor = 0.8 + Math.random() * 0.4; // ±20% variation
+                // Generate realistic demo wind data for the requested location and date
+                const startDate = new Date(date + 'T00:00:00');
+                const hours = 24;
                 
-                const speed10 = baseWindSpeed * hourFactor * randomFactor;
-                const speed100 = speed10 * (1.2 + Math.random() * 0.2); // 20-40% increase with height
-                const speed120 = speed100 * (1.05 + Math.random() * 0.1);
+                // Create realistic wind patterns based on location and time
+                const baseWindSpeed = 8 + Math.random() * 6; // 8-14 knots base
+                const baseDirection = Math.random() * 360;
                 
-                windSpeed10m.push(speed10);
-                windSpeed100m.push(speed100);
-                windSpeed120m.push(speed120);
+                const timeArray = [];
+                const windSpeed10m = [];
+                const windDirection10m = [];
+                const windGusts10m = [];
+                const windSpeed100m = [];
+                const windDirection100m = [];
+                const windSpeed120m = [];
+                const windDirection120m = [];
                 
-                // Direction with slight backing/veering
-                const directionShift = (Math.random() - 0.5) * 30; // ±15° variation
-                const heightShift = Math.random() * 10; // Slight veering with height
-                
-                windDirection10m.push((baseDirection + directionShift + 360) % 360);
-                windDirection100m.push((baseDirection + directionShift + heightShift + 360) % 360);
-                windDirection120m.push((baseDirection + directionShift + heightShift * 1.5 + 360) % 360);
-                
-                // Gusts are typically 20-50% higher than sustained winds
-                windGusts10m.push(speed10 * (1.2 + Math.random() * 0.3));
-            }
-            
-            // Create mock API response structure
-            windData = {
-                latitude: latitude,
-                longitude: longitude,
-                elevation: 50 + Math.random() * 100, // Mock elevation
-                timezone: timezone === 'auto' ? 'Europe/Paris' : timezone,
-                hourly: {
-                    time: timeArray,
-                    wind_speed_10m: windSpeed10m,
-                    wind_direction_10m: windDirection10m,
-                    wind_gusts_10m: windGusts10m,
-                    wind_speed_100m: windSpeed100m,
-                    wind_direction_100m: windDirection100m,
-                    wind_speed_120m: windSpeed120m,
-                    wind_direction_120m: windDirection120m,
-                    // Map to expected parameters for consistency
-                    wind_speed_200m: windSpeed120m.map(s => s * 1.1),
-                    wind_direction_200m: windDirection120m
+                for (let i = 0; i < hours; i++) {
+                    const currentTime = new Date(startDate.getTime() + i * 60 * 60 * 1000);
+                    timeArray.push(currentTime.toISOString());
+                    
+                    // Simulate daily wind pattern with some randomness
+                    const hourFactor = 1 + 0.3 * Math.sin((i - 6) * Math.PI / 12); // Peak afternoon
+                    const randomFactor = 0.8 + Math.random() * 0.4; // ±20% variation
+                    
+                    const speed10 = baseWindSpeed * hourFactor * randomFactor;
+                    const speed100 = speed10 * (1.2 + Math.random() * 0.2); // 20-40% increase with height
+                    const speed120 = speed100 * (1.05 + Math.random() * 0.1);
+                    
+                    windSpeed10m.push(speed10);
+                    windSpeed100m.push(speed100);
+                    windSpeed120m.push(speed120);
+                    
+                    // Direction with slight backing/veering
+                    const directionShift = (Math.random() - 0.5) * 30; // ±15° variation
+                    const heightShift = Math.random() * 10; // Slight veering with height
+                    
+                    windDirection10m.push((baseDirection + directionShift + 360) % 360);
+                    windDirection100m.push((baseDirection + directionShift + heightShift + 360) % 360);
+                    windDirection120m.push((baseDirection + directionShift + heightShift * 1.5 + 360) % 360);
+                    
+                    // Gusts are typically 20-50% higher than sustained winds
+                    windGusts10m.push(speed10 * (1.2 + Math.random() * 0.3));
                 }
-            };
-            
-            console.log('Demo data generated successfully for', latitude, longitude);
-            return true;
+                
+                // Create mock API response structure
+                windData = {
+                    latitude: latitude,
+                    longitude: longitude,
+                    elevation: 50 + Math.random() * 100, // Mock elevation
+                    timezone: timezone === 'auto' ? 'Europe/Paris' : timezone,
+                    hourly: {
+                        time: timeArray,
+                        wind_speed_10m: windSpeed10m,
+                        wind_direction_10m: windDirection10m,
+                        wind_gusts_10m: windGusts10m,
+                        wind_speed_100m: windSpeed100m,
+                        wind_direction_100m: windDirection100m,
+                        wind_speed_120m: windSpeed120m,
+                        wind_direction_120m: windDirection120m,
+                        // Map to expected parameters for consistency
+                        wind_speed_200m: windSpeed120m.map(s => s * 1.1),
+                        wind_direction_200m: windDirection120m
+                    }
+                };
+                
+                debugLog('Demo data generated successfully for', `${latitude}, ${longitude}`);
+                return true;
+            } catch (error) {
+                debugLog('Error generating demo data', error);
+                return false;
+            }
         }
 
         async function tryAromeAPI(latitude, longitude, date, timezone) {
+            debugLog('Trying AROME API...');
+            
             // Build hourly parameters for all levels
             const hourlyParams = [];
             pressureLevels.forEach(level => {
@@ -690,7 +742,7 @@
             ];
             
             const fullUrl = `${baseUrl}?${params.join('&')}`;
-            console.log('Trying AROME API:', fullUrl);
+            debugLog('AROME API URL', fullUrl);
 
             try {
                 const response = await fetch(fullUrl, {
@@ -700,20 +752,20 @@
                     }
                 });
                 
-                console.log('AROME Response status:', response.status);
+                debugLog('AROME Response status', response.status);
                 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error('AROME API failed:', response.status, response.statusText, errorText);
+                    debugLog('AROME API failed', { status: response.status, error: errorText });
                     showError(`AROME API Error (${response.status}): ${response.statusText}\nDetails: ${errorText}\nURL: ${fullUrl}`);
                     return false;
                 }
 
                 const data = await response.json();
-                console.log('AROME API Response received:', Object.keys(data));
+                debugLog('AROME API Response received', Object.keys(data));
                 
                 if (data.error) {
-                    console.error('AROME API error:', data.reason);
+                    debugLog('AROME API error', data.reason);
                     showError(`AROME API Error: ${data.reason}\nURL: ${fullUrl}`);
                     return false;
                 }
@@ -730,8 +782,8 @@
                     }
                 });
 
-                console.log('Available wind parameters:', availableParams);
-                console.log('Missing wind parameters:', missingParams);
+                debugLog('Available wind parameters', availableParams);
+                debugLog('Missing wind parameters', missingParams);
 
                 if (availableParams.length === 0) {
                     showError(`No AROME wind data available for this location.\nLocation: ${latitude}°, ${longitude}°\nDate: ${date}\nMissing parameters: ${missingParams.join(', ')}\n\nThis location may be outside AROME model coverage.`);
@@ -739,17 +791,19 @@
                 }
 
                 windData = data;
-                console.log('AROME data successfully loaded with', availableParams.length, 'parameters');
+                debugLog('AROME data successfully loaded', `${availableParams.length} parameters`);
                 return true;
 
             } catch (error) {
-                console.error('AROME API fetch error:', error);
+                debugLog('AROME API fetch error', error);
                 showError(`AROME API Network Error: ${error.message}\nURL: ${fullUrl}\nThis may be due to:\n- Network connectivity issues\n- API server problems\n- CORS restrictions (if running locally)\n\nTrying fallback API...`);
                 return false;
             }
         }
 
         async function tryGeneralAPI(latitude, longitude, date, timezone) {
+            debugLog('Trying General Forecast API...');
+            
             // Simplified general forecast API - using only well-supported parameters
             const baseUrl = 'https://api.open-meteo.com/v1/forecast';
             const params = [
@@ -764,7 +818,7 @@
             ];
             
             const fullUrl = `${baseUrl}?${params.join('&')}`;
-            console.log('Trying General Forecast API:', fullUrl);
+            debugLog('General API URL', fullUrl);
 
             try {
                 const response = await fetch(fullUrl, {
@@ -774,20 +828,20 @@
                     }
                 });
                 
-                console.log('General API Response status:', response.status);
+                debugLog('General API Response status', response.status);
                 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error('General API failed:', response.status, response.statusText, errorText);
+                    debugLog('General API failed', { status: response.status, error: errorText });
                     showError(`General Forecast API Error (${response.status}): ${response.statusText}\nDetails: ${errorText}\nURL: ${fullUrl}`);
                     return false;
                 }
 
                 const data = await response.json();
-                console.log('General API Response received:', Object.keys(data));
+                debugLog('General API Response received', Object.keys(data));
                 
                 if (data.error) {
-                    console.error('General API error:', data.reason);
+                    debugLog('General API error', data.reason);
                     showError(`General Forecast API Error: ${data.reason}\nURL: ${fullUrl}`);
                     return false;
                 }
@@ -811,7 +865,7 @@
                     windMapping.push('180m → 200m mapping');
                 }
 
-                console.log('Wind data mapping:', windMapping);
+                debugLog('Wind data mapping', windMapping);
 
                 if (windMapping.length === 0) {
                     showError(`No wind data available from General Forecast API.\nLocation: ${latitude}°, ${longitude}°\nDate: ${date}\nResponse data keys: ${Object.keys(data.hourly || {}).join(', ')}\n\nFalling back to demo data...`);
@@ -819,45 +873,69 @@
                 }
 
                 windData = data;
-                console.log('General API data successfully loaded with mappings:', windMapping);
+                debugLog('General API data successfully loaded', windMapping);
                 return true;
 
             } catch (error) {
-                console.error('General API fetch error:', error);
+                debugLog('General API fetch error', error);
                 showError(`General Forecast API Network Error: ${error.message}\nURL: ${fullUrl}\nThis may be due to:\n- Network connectivity issues\n- API server problems\n- Invalid request parameters\n\nFalling back to demo data...`);
                 return false;
             }
         }
 
-        function processAndDisplayData() {
-            // Update info panel - convert decimal degrees back to DMS format for display
-            const latDMS = decimalToDMS(windData.latitude, false);
-            const lonDMS = decimalToDMS(windData.longitude, true);
+        async function processAndDisplayData() {
+            debugLog('Processing and displaying data...');
             
-            document.getElementById('location-info').textContent = `${latDMS}, ${lonDMS}`;
-            document.getElementById('elevation-info').textContent = 
-                `${Math.round(windData.elevation)} m`;
-            
-            const timeData = windData.hourly.time;
-            document.getElementById('data-points').textContent = `${timeData.length} hours`;
-            
-            const startTime = new Date(timeData[0]).toLocaleDateString();
-            const endTime = new Date(timeData[timeData.length - 1]).toLocaleDateString();
-            document.getElementById('time-range').textContent = 
-                startTime === endTime ? startTime : `${startTime} - ${endTime}`;
+            try {
+                // Update info panel - convert decimal degrees back to DMS format for display
+                const latDMS = decimalToDMS(windData.latitude, false);
+                const lonDMS = decimalToDMS(windData.longitude, true);
+                
+                document.getElementById('location-info').textContent = `${latDMS}, ${lonDMS}`;
+                document.getElementById('elevation-info').textContent = 
+                    `${Math.round(windData.elevation)} m`;
+                
+                const timeData = windData.hourly.time;
+                document.getElementById('data-points').textContent = `${timeData.length} hours`;
+                
+                const startTime = new Date(timeData[0]).toLocaleDateString();
+                const endTime = new Date(timeData[timeData.length - 1]).toLocaleDateString();
+                document.getElementById('time-range').textContent = 
+                    startTime === endTime ? startTime : `${startTime} - ${endTime}`;
 
-            // Create level selector
-            createLevelSelector();
-            
-            // Populate time selector
-            populateTimeSelector();
-            
-            // Create charts
-            createWindSpeedChart();
-            createWindDirectionChart();
-            createWindBarbsChart();
-            createLogarithmicProfile();
-            createVerticalProfileChart();
+                // Create level selector
+                await createLevelSelector();
+                
+                // Populate time selector
+                await populateTimeSelector();
+                
+                // Create charts with error handling
+                debugLog('Creating charts...');
+                await safelyCreateChart('windSpeedChart', createWindSpeedChart);
+                await safelyCreateChart('windDirectionChart', createWindDirectionChart);
+                await safelyCreateChart('windBarbsChart', createWindBarbsChart);
+                await safelyCreateChart('logProfileChart', createLogarithmicProfile);
+                await safelyCreateChart('verticalProfileChart', createVerticalProfileChart);
+                
+                debugLog('All charts created successfully');
+            } catch (error) {
+                debugLog('Error in processAndDisplayData', error);
+                throw error;
+            }
+        }
+
+        async function safelyCreateChart(chartId, createFunction) {
+            try {
+                debugLog(`Creating chart: ${chartId}`);
+                await createFunction();
+                debugLog(`Chart created successfully: ${chartId}`);
+            } catch (error) {
+                debugLog(`Error creating chart ${chartId}`, error);
+                document.getElementById(chartId).innerHTML = 
+                    `<div style="text-align: center; padding: 50px; color: #e74c3c;">
+                        Error creating ${chartId}: ${error.message}
+                    </div>`;
+            }
         }
 
         function decimalToDMS(decimal, isLongitude) {
@@ -876,7 +954,9 @@
             return `${degreesPadded} ${minutes.toFixed(1)}${direction}`;
         }
 
-        function createLevelSelector() {
+        async function createLevelSelector() {
+            debugLog('Creating level selector...');
+            
             const selector = document.getElementById('level-selector');
             selector.innerHTML = '';
             
@@ -894,6 +974,8 @@
         }
 
         function toggleLevel(level, btn) {
+            debugLog('Toggling level', level);
+            
             if (selectedLevels.has(level)) {
                 selectedLevels.delete(level);
                 btn.classList.remove('active');
@@ -901,10 +983,18 @@
                 selectedLevels.add(level);
                 btn.classList.add('active');
             }
-            createWindSpeedChart();
+            
+            // Safely recreate wind speed chart
+            safelyCreateChart('windSpeedChart', createWindSpeedChart);
         }
 
-        function createWindSpeedChart() {
+        async function createWindSpeedChart() {
+            debugLog('Creating wind speed chart...');
+            
+            if (!windData || !windData.hourly || !windData.hourly.time) {
+                throw new Error('No wind data available');
+            }
+            
             const times = windData.hourly.time.map(t => new Date(t));
             const traces = [];
 
@@ -953,10 +1043,16 @@
                 margin: { t: 40, b: 80 }
             };
 
-            Plotly.newPlot('windSpeedChart', traces, layout, { responsive: true });
+            await Plotly.newPlot('windSpeedChart', traces, layout, { responsive: true });
         }
 
-        function createWindDirectionChart() {
+        async function createWindDirectionChart() {
+            debugLog('Creating wind direction chart...');
+            
+            if (!windData || !windData.hourly) {
+                throw new Error('No wind data available');
+            }
+            
             const times = windData.hourly.time.map(t => new Date(t));
             const traces = [];
 
@@ -1007,10 +1103,16 @@
                 margin: { t: 40, b: 80 }
             };
 
-            Plotly.newPlot('windDirectionChart', traces, layout, { responsive: true });
+            await Plotly.newPlot('windDirectionChart', traces, layout, { responsive: true });
         }
 
-        function createWindBarbsChart() {
+        async function createWindBarbsChart() {
+            debugLog('Creating wind barbs chart...');
+            
+            if (!windData || !windData.hourly) {
+                throw new Error('No wind data available');
+            }
+            
             const times = windData.hourly.time.map(t => new Date(t));
             const traces = [];
 
@@ -1067,6 +1169,12 @@
                 });
             }
 
+            if (traces.length === 0) {
+                document.getElementById('windBarbsChart').innerHTML = 
+                    '<div style="text-align: center; padding: 50px; color: #7f8c8d;">No wind barb data available</div>';
+                return;
+            }
+
             const layout = {
                 title: 'Wind Barbs - 10m Level',
                 xaxis: { 
@@ -1082,10 +1190,12 @@
                 margin: { t: 40, b: 80, r: 80 }
             };
 
-            Plotly.newPlot('windBarbsChart', traces, layout, { responsive: true });
+            await Plotly.newPlot('windBarbsChart', traces, layout, { responsive: true });
         }
 
-        function populateTimeSelector() {
+        async function populateTimeSelector() {
+            debugLog('Populating time selector...');
+            
             const timeSelect = document.getElementById('time-select');
             timeSelect.innerHTML = '';
             
@@ -1123,17 +1233,160 @@
         }
 
         function updateLogProfile() {
-            const timeSelect = document.getElementById('time-select');
-            selectedTimeIndex = parseInt(timeSelect.value);
-            createLogarithmicProfile();
-            createVerticalProfileChart();
+            debugLog('Updating log profile...');
+            
+            try {
+                const timeSelect = document.getElementById('time-select');
+                selectedTimeIndex = parseInt(timeSelect.value);
+                
+                // Safely update both charts
+                safelyCreateChart('logProfileChart', createLogarithmicProfile);
+                safelyCreateChart('verticalProfileChart', createVerticalProfileChart);
+            } catch (error) {
+                debugLog('Error updating log profile', error);
+            }
         }
 
-        function createVerticalProfileChart() {
+        // MISSING FUNCTION - This was causing the crashes!
+        async function createLogarithmicProfile() {
+            debugLog('Creating logarithmic profile...');
+            
             if (!windData || !windData.hourly) {
-                document.getElementById('verticalProfileChart').innerHTML = 
-                    '<div style="text-align: center; padding: 50px; color: #7f8c8d;">No data available</div>';
+                throw new Error('No wind data available');
+            }
+
+            // Use selected time index for logarithmic profile
+            const profileData = [];
+            const selectedTime = new Date(windData.hourly.time[selectedTimeIndex]);
+
+            pressureLevels.forEach(level => {
+                const speed = windData.hourly[level.param]?.[selectedTimeIndex];
+                const direction = windData.hourly[level.dir_param]?.[selectedTimeIndex];
+                
+                if (speed !== null && speed !== undefined && direction !== null && direction !== undefined) {
+                    profileData.push({
+                        level: level.level,
+                        altitude: level.altitude,
+                        logAltitude: Math.log(Math.max(level.altitude, 1)), // Avoid log(0)
+                        speed: kmhToKnots(speed),
+                        direction: direction,
+                        color: level.color
+                    });
+                }
+            });
+
+            if (profileData.length === 0) {
+                document.getElementById('logProfileChart').innerHTML = 
+                    '<div style="text-align: center; padding: 50px; color: #7f8c8d;">No wind profile data available for selected time</div>';
                 return;
+            }
+
+            // Sort by altitude
+            profileData.sort((a, b) => a.altitude - b.altitude);
+
+            // Create logarithmic wind profile trace
+            const trace = {
+                x: profileData.map(d => d.speed),
+                y: profileData.map(d => d.logAltitude),
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { color: '#e74c3c', width: 3, shape: 'spline' },
+                marker: { 
+                    size: 10,
+                    color: profileData.map(d => d.speed),
+                    colorscale: 'Viridis',
+                    showscale: true,
+                    colorbar: {
+                        title: 'Wind Speed (knots)',
+                        x: 1.02
+                    },
+                    line: {
+                        color: '#2c3e50',
+                        width: 2
+                    }
+                },
+                text: profileData.map(d => 
+                    `Level: ${d.level}<br>` +
+                    `Altitude: ${d.altitude} m<br>` +
+                    `ln(altitude): ${d.logAltitude.toFixed(2)}<br>` +
+                    `Speed: ${d.speed.toFixed(1)} knots<br>` +
+                    `Direction: ${d.direction.toFixed(0)}°`
+                ),
+                hovertemplate: '%{text}<extra></extra>',
+                name: 'Log Wind Profile'
+            };
+
+            // Add theoretical logarithmic profile line if we have enough data points
+            let theoreticalTrace = null;
+            if (profileData.length >= 2) {
+                try {
+                    // Simple linear regression on log-transformed data to show theoretical profile
+                    const x = profileData.map(d => d.logAltitude);
+                    const y = profileData.map(d => d.speed);
+                    
+                    const n = x.length;
+                    const sumX = x.reduce((a, b) => a + b, 0);
+                    const sumY = y.reduce((a, b) => a + b, 0);
+                    const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
+                    const sumXX = x.reduce((sum, xi) => sum + xi * xi, 0);
+                    
+                    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+                    const intercept = (sumY - slope * sumX) / n;
+                    
+                    const theoreticalX = x.map(xi => intercept + slope * xi);
+                    
+                    theoreticalTrace = {
+                        x: theoreticalX,
+                        y: x,
+                        type: 'scatter',
+                        mode: 'lines',
+                        line: { color: '#3498db', width: 2, dash: 'dash' },
+                        name: 'Theoretical Log Profile',
+                        hovertemplate: 'Theoretical Speed: %{x:.1f} knots<br>ln(altitude): %{y:.2f}<extra></extra>'
+                    };
+                } catch (error) {
+                    debugLog('Could not create theoretical profile', error);
+                }
+            }
+
+            const traces = theoreticalTrace ? [trace, theoreticalTrace] : [trace];
+
+            const layout = {
+                title: `Logarithmic Wind Profile - ${selectedTime.toLocaleString()}`,
+                xaxis: { 
+                    title: 'Wind Speed (knots)',
+                    rangemode: 'tozero'
+                },
+                yaxis: { 
+                    title: 'ln(Altitude)',
+                    tickmode: 'array',
+                    tickvals: profileData.map(d => d.logAltitude),
+                    ticktext: profileData.map(d => `${d.altitude}m`)
+                },
+                legend: {
+                    orientation: 'h',
+                    y: -0.2
+                },
+                margin: { t: 60, b: 80, r: 80 },
+                annotations: [{
+                    text: 'Logarithmic scale follows<br>atmospheric boundary layer theory',
+                    showarrow: false,
+                    x: 0.02,
+                    y: 0.98,
+                    xref: 'paper',
+                    yref: 'paper',
+                    font: { size: 10, color: '#7f8c8d' }
+                }]
+            };
+
+            await Plotly.newPlot('logProfileChart', traces, layout, { responsive: true });
+        }
+
+        async function createVerticalProfileChart() {
+            debugLog('Creating vertical profile chart...');
+            
+            if (!windData || !windData.hourly) {
+                throw new Error('No wind data available');
             }
 
             // Use selected time index for vertical profile
@@ -1217,8 +1470,12 @@
                 }]
             };
 
-            Plotly.newPlot('verticalProfileChart', [trace], layout, { responsive: true });
+            await Plotly.newPlot('verticalProfileChart', [trace], layout, { responsive: true });
         }
+
+        // Enable debug mode in browser console if needed
+        // Set window.showDebugInfo = true in console to see debug messages in UI
+        console.log('AROME Wind Analysis loaded. Set window.showDebugInfo = true to see debug messages.');
     </script>
 </body>
 </html>
