@@ -308,7 +308,7 @@
     <div class="container">
         <div class="header">
             <h1>AROME Wind Analysis</h1>
-            <p>High-resolution wind forecasts with boundary layer height analysis</p>
+            <p>High-resolution wind forecasts with atmospheric sounding and boundary layer analysis</p>
         </div>
 
         <div class="input-section">
@@ -317,8 +317,9 @@
                 <br><br>
                 <strong>Data Sources:</strong>
                 <ul style="margin: 10px 0 0 20px;">
-                    <li>AROME: High-resolution wind profiles (1.5km resolution)</li>
+                    <li>AROME: High-resolution wind profiles + atmospheric sounding data</li>
                     <li>GFS: Boundary layer height data (global coverage)</li>
+                    <li>Skew-T diagrams with temperature, dewpoint, and wind profiles</li>
                     <li>Demo data available if APIs are unavailable</li>
                 </ul>
             </div>
@@ -376,6 +377,10 @@
                         <div class="value">AROME</div>
                     </div>
                     <div class="info-item">
+                        <div class="label">Sounding Model</div>
+                        <div class="value">AROME</div>
+                    </div>
+                    <div class="info-item">
                         <div class="label">HPBL Model</div>
                         <div class="value">GFS</div>
                     </div>
@@ -395,6 +400,19 @@
                 <div class="level-selector" id="level-selector"></div>
                 <div class="chart-wrapper">
                     <div id="windSpeedChart"></div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">Atmospheric Sounding - Skew-T Diagram</div>
+                <div class="time-selector">
+                    <label for="sounding-time-select">Select Time:</label>
+                    <select id="sounding-time-select" onchange="updateSkewT()">
+                        <!-- Options will be populated by JavaScript -->
+                    </select>
+                </div>
+                <div class="chart-wrapper">
+                    <div id="skewTChart"></div>
                 </div>
             </div>
 
@@ -441,8 +459,37 @@
         // Set today's date as default
         document.getElementById('date').valueAsDate = new Date();
 
-        // Available pressure levels up to 925 hPa
+        // Available pressure levels for wind analysis
         const pressureLevels = [
+            { level: '10m', param: 'wind_speed_10m', dir_param: 'wind_direction_10m', altitude: 10, color: '#e74c3c' },
+            { level: '20m', param: 'wind_speed_20m', dir_param: 'wind_direction_20m', altitude: 20, color: '#f39c12' },
+            { level: '50m', param: 'wind_speed_50m', dir_param: 'wind_direction_50m', altitude: 50, color: '#f1c40f' },
+            { level: '100m', param: 'wind_speed_100m', dir_param: 'wind_direction_100m', altitude: 100, color: '#2ecc71' },
+            { level: '150m', param: 'wind_speed_150m', dir_param: 'wind_direction_150m', altitude: 150, color: '#3498db' },
+            { level: '200m', param: 'wind_speed_200m', dir_param: 'wind_direction_200m', altitude: 200, color: '#9b59b6' },
+            { level: '1000hPa', param: 'windspeed_1000hPa', dir_param: 'winddirection_1000hPa', altitude: 110, color: '#1abc9c' },
+            { level: '975hPa', param: 'windspeed_975hPa', dir_param: 'winddirection_975hPa', altitude: 320, color: '#34495e' },
+            { level: '950hPa', param: 'windspeed_950hPa', dir_param: 'winddirection_950hPa', altitude: 500, color: '#e67e22' },
+            { level: '925hPa', param: 'windspeed_925hPa', dir_param: 'winddirection_925hPa', altitude: 800, color: '#8e44ad' }
+        ];
+
+        // Available pressure levels for sounding data
+        const soundingLevels = [
+            { level: 1000, param: 'temperature_1000hPa', rh_param: 'relative_humidity_1000hPa', wind_param: 'windspeed_1000hPa', dir_param: 'winddirection_1000hPa' },
+            { level: 975, param: 'temperature_975hPa', rh_param: 'relative_humidity_975hPa', wind_param: 'windspeed_975hPa', dir_param: 'winddirection_975hPa' },
+            { level: 950, param: 'temperature_950hPa', rh_param: 'relative_humidity_950hPa', wind_param: 'windspeed_950hPa', dir_param: 'winddirection_950hPa' },
+            { level: 925, param: 'temperature_925hPa', rh_param: 'relative_humidity_925hPa', wind_param: 'windspeed_925hPa', dir_param: 'winddirection_925hPa' },
+            { level: 900, param: 'temperature_900hPa', rh_param: 'relative_humidity_900hPa', wind_param: 'windspeed_900hPa', dir_param: 'winddirection_900hPa' },
+            { level: 875, param: 'temperature_875hPa', rh_param: 'relative_humidity_875hPa', wind_param: 'windspeed_875hPa', dir_param: 'winddirection_875hPa' },
+            { level: 850, param: 'temperature_850hPa', rh_param: 'relative_humidity_850hPa', wind_param: 'windspeed_850hPa', dir_param: 'winddirection_850hPa' },
+            { level: 800, param: 'temperature_800hPa', rh_param: 'relative_humidity_800hPa', wind_param: 'windspeed_800hPa', dir_param: 'winddirection_800hPa' },
+            { level: 750, param: 'temperature_750hPa', rh_param: 'relative_humidity_750hPa', wind_param: 'windspeed_750hPa', dir_param: 'winddirection_750hPa' },
+            { level: 700, param: 'temperature_700hPa', rh_param: 'relative_humidity_700hPa', wind_param: 'windspeed_700hPa', dir_param: 'winddirection_700hPa' },
+            { level: 650, param: 'temperature_650hPa', rh_param: 'relative_humidity_650hPa', wind_param: 'windspeed_650hPa', dir_param: 'winddirection_650hPa' },
+            { level: 600, param: 'temperature_600hPa', rh_param: 'relative_humidity_600hPa', wind_param: 'windspeed_600hPa', dir_param: 'winddirection_600hPa' },
+            { level: 550, param: 'temperature_550hPa', rh_param: 'relative_humidity_550hPa', wind_param: 'windspeed_550hPa', dir_param: 'winddirection_550hPa' },
+            { level: 500, param: 'temperature_500hPa', rh_param: 'relative_humidity_500hPa', wind_param: 'windspeed_500hPa', dir_param: 'winddirection_500hPa' }
+        ];
             { level: '10m', param: 'wind_speed_10m', dir_param: 'wind_direction_10m', altitude: 10, color: '#e74c3c' },
             { level: '20m', param: 'wind_speed_20m', dir_param: 'wind_direction_20m', altitude: 20, color: '#f39c12' },
             { level: '50m', param: 'wind_speed_50m', dir_param: 'wind_direction_50m', altitude: 50, color: '#f1c40f' },
@@ -574,11 +621,24 @@
             debugLog('Trying AROME API...');
             
             const hourlyParams = [];
+            
+            // Add wind parameters
             pressureLevels.forEach(level => {
                 hourlyParams.push(level.param);
                 hourlyParams.push(level.dir_param);
             });
             hourlyParams.push('wind_gusts_10m');
+            
+            // Add sounding parameters (temperature, humidity, wind at pressure levels)
+            soundingLevels.forEach(level => {
+                hourlyParams.push(level.param);
+                hourlyParams.push(level.rh_param);
+                hourlyParams.push(level.wind_param);
+                hourlyParams.push(level.dir_param);
+            });
+            
+            // Add surface parameters for sounding
+            hourlyParams.push('temperature_2m', 'relative_humidity_2m', 'surface_pressure');
 
             const baseUrl = 'https://api.open-meteo.com/v1/meteofrance';
             const params = [
@@ -790,6 +850,53 @@
                     }
                 };
                 
+                // Add demo sounding data (temperature and humidity at pressure levels)
+                const demoSoundingData = {};
+                const surfaceTemp = 15 + Math.sin((12 - 6) * Math.PI / 12) * 8; // Surface temperature
+                const surfaceRH = 70 + Math.random() * 20; // Surface humidity 70-90%
+                
+                // Add surface parameters
+                demoSoundingData.temperature_2m = timeArray.map((_, i) => 
+                    15 + Math.sin((i - 6) * Math.PI / 12) * 8 + (Math.random() - 0.5) * 2);
+                demoSoundingData.relative_humidity_2m = timeArray.map(() => 70 + Math.random() * 20);
+                demoSoundingData.surface_pressure = timeArray.map(() => 1013 + (Math.random() - 0.5) * 10);
+                
+                // Generate atmospheric sounding profiles for each pressure level
+                soundingLevels.forEach(level => {
+                    const altitude = pressureToAltitude(level.level); // Approximate altitude
+                    const tempLapseRate = 6.5; // °C per km (standard atmosphere)
+                    const tempAtLevel = timeArray.map((_, i) => {
+                        const surfaceTempAtTime = demoSoundingData.temperature_2m[i];
+                        return surfaceTempAtTime - (altitude / 1000) * tempLapseRate + (Math.random() - 0.5) * 2;
+                    });
+                    
+                    const rhAtLevel = timeArray.map(() => {
+                        // Humidity generally decreases with altitude, with some variability
+                        const baseRH = Math.max(20, surfaceRH - (altitude / 2000) * 30);
+                        return baseRH + (Math.random() - 0.5) * 20;
+                    });
+                    
+                    const windAtLevel = timeArray.map(() => {
+                        // Wind generally increases with altitude
+                        const windIncrease = altitude / 5000; // Increases by ~1 m/s per 5km
+                        return Math.max(2, baseWindSpeed * (1 + windIncrease) * (0.8 + Math.random() * 0.4));
+                    });
+                    
+                    const dirAtLevel = timeArray.map(() => {
+                        // Wind direction can veer with altitude
+                        const veeringAngle = (altitude / 3000) * 15; // Up to 15° veering per 3km
+                        return (baseDirection + veeringAngle + (Math.random() - 0.5) * 20 + 360) % 360;
+                    });
+                    
+                    demoSoundingData[level.param] = tempAtLevel;
+                    demoSoundingData[level.rh_param] = rhAtLevel;
+                    demoSoundingData[level.wind_param] = windAtLevel;
+                    demoSoundingData[level.dir_param] = dirAtLevel;
+                });
+                
+                // Merge sounding data with wind data
+                Object.assign(windData.hourly, demoSoundingData);
+                
                 debugLog('Demo wind data generated successfully');
                 return true;
             } catch (error) {
@@ -798,7 +905,30 @@
             }
         }
 
-        async function loadDemoBoundaryLayerData(latitude, longitude, date, timezone) {
+        // Helper function to convert pressure to approximate altitude
+        function pressureToAltitude(pressure) {
+            // Standard atmosphere approximation: h = 44330 * (1 - (P/P0)^0.1903)
+            const P0 = 1013.25; // Sea level pressure in hPa
+            return 44330 * (1 - Math.pow(pressure / P0, 0.1903));
+        }
+
+        // Helper function to calculate dewpoint from temperature and relative humidity
+        function calculateDewpoint(temp, rh) {
+            // Magnus formula approximation
+            const a = 17.27;
+            const b = 237.7;
+            const alpha = ((a * temp) / (b + temp)) + Math.log(rh / 100);
+            return (b * alpha) / (a - alpha);
+        }
+
+        // Helper function for Skew-T coordinate transformation
+        function skewTransform(temp, pressure) {
+            // Skew the temperature axis (typically 45° skew)
+            const skewFactor = 0.7; // Adjust this for more/less skew
+            const logP = Math.log(pressure);
+            const skewedX = temp + skewFactor * (1000 - pressure) / 100;
+            return { x: skewedX, y: logP };
+        }
             debugLog('Loading demo boundary layer height data...');
             
             try {
@@ -858,9 +988,11 @@
 
                 await createLevelSelector();
                 await populateTimeSelector();
+                await populateSoundingTimeSelector();
                 
                 debugLog('Creating charts...');
                 await safelyCreateChart('windSpeedChart', createWindSpeedChart);
+                await safelyCreateChart('skewTChart', createSkewTChart);
                 await safelyCreateChart('boundaryLayerChart', createBoundaryLayerChart);
                 await safelyCreateChart('logProfileChart', createLogarithmicProfile);
                 await safelyCreateChart('verticalProfileChart', createVerticalProfileChart);
@@ -1107,8 +1239,14 @@
             try {
                 const timeSelect = document.getElementById('time-select');
                 selectedTimeIndex = parseInt(timeSelect.value);
+                
+                // Update both the sounding time selector to match
+                const soundingTimeSelect = document.getElementById('sounding-time-select');
+                soundingTimeSelect.value = selectedTimeIndex;
+                
                 safelyCreateChart('logProfileChart', createLogarithmicProfile);
                 safelyCreateChart('verticalProfileChart', createVerticalProfileChart);
+                safelyCreateChart('skewTChart', createSkewTChart);
             } catch (error) {
                 debugLog('Error updating log profile', error);
             }
@@ -1272,11 +1410,338 @@
                 }]
             };
 
-            await Plotly.newPlot('verticalProfileChart', [trace], layout, { responsive: true });
+        async function populateSoundingTimeSelector() {
+            debugLog('Populating sounding time selector...');
+            
+            const timeSelect = document.getElementById('sounding-time-select');
+            timeSelect.innerHTML = '';
+            
+            if (!windData || !windData.hourly || !windData.hourly.time) {
+                return;
+            }
+            
+            windData.hourly.time.forEach((timeStr, index) => {
+                const date = new Date(timeStr);
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = date.toLocaleString([], { 
+                    weekday: 'short',
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: false 
+                });
+                
+                if (date.getHours() === 12 && date.getMinutes() === 0) {
+                    option.selected = true;
+                    selectedTimeIndex = index;
+                } else if (index === 0 && selectedTimeIndex >= windData.hourly.time.length) {
+                    option.selected = true;
+                    selectedTimeIndex = 0;
+                }
+                
+                timeSelect.appendChild(option);
+            });
+            
+            if (selectedTimeIndex >= windData.hourly.time.length) {
+                selectedTimeIndex = Math.floor(windData.hourly.time.length / 2);
+                timeSelect.value = selectedTimeIndex;
+            }
+        }
+
+        function updateSkewT() {
+            debugLog('Updating Skew-T diagram...');
+            
+            try {
+                const timeSelect = document.getElementById('sounding-time-select');
+                selectedTimeIndex = parseInt(timeSelect.value);
+                
+                // Update the other time selector to match
+                const logTimeSelect = document.getElementById('time-select');
+                logTimeSelect.value = selectedTimeIndex;
+                
+                safelyCreateChart('skewTChart', createSkewTChart);
+                safelyCreateChart('logProfileChart', createLogarithmicProfile);
+                safelyCreateChart('verticalProfileChart', createVerticalProfileChart);
+            } catch (error) {
+                debugLog('Error updating Skew-T', error);
+            }
+        }
+
+        async function createSkewTChart() {
+            debugLog('Creating Skew-T chart...');
+            
+            if (!windData || !windData.hourly) {
+                throw new Error('No atmospheric sounding data available');
+            }
+
+            const selectedTime = new Date(windData.hourly.time[selectedTimeIndex]);
+            
+            // Extract sounding data for the selected time
+            const soundingData = [];
+            const windData_sounding = []; // For wind barbs
+            
+            soundingLevels.forEach(level => {
+                const temp = windData.hourly[level.param]?.[selectedTimeIndex];
+                const rh = windData.hourly[level.rh_param]?.[selectedTimeIndex];
+                const windSpeed = windData.hourly[level.wind_param]?.[selectedTimeIndex];
+                const windDir = windData.hourly[level.dir_param]?.[selectedTimeIndex];
+                
+                if (temp !== null && temp !== undefined && rh !== null && rh !== undefined) {
+                    const dewpoint = calculateDewpoint(temp, rh);
+                    const coords = skewTransform(temp, level.level);
+                    const dewCoords = skewTransform(dewpoint, level.level);
+                    
+                    soundingData.push({
+                        pressure: level.level,
+                        temperature: temp,
+                        dewpoint: dewpoint,
+                        rh: rh,
+                        tempCoords: coords,
+                        dewCoords: dewCoords,
+                        logP: Math.log(level.level)
+                    });
+                    
+                    if (windSpeed !== null && windDir !== null) {
+                        windData_sounding.push({
+                            pressure: level.level,
+                            windSpeed: kmhToKnots(windSpeed),
+                            windDir: windDir,
+                            logP: Math.log(level.level)
+                        });
+                    }
+                }
+            });
+
+            if (soundingData.length === 0) {
+                document.getElementById('skewTChart').innerHTML = 
+                    '<div style="text-align: center; padding: 50px; color: #7f8c8d;">No atmospheric sounding data available for selected time</div>';
+                return;
+            }
+
+            // Sort by pressure (descending - surface to upper levels)
+            soundingData.sort((a, b) => b.pressure - a.pressure);
+            windData_sounding.sort((a, b) => b.pressure - a.pressure);
+
+            const traces = [];
+
+            // Create background grid lines (isotherms)
+            const tempLines = [];
+            for (let temp = -80; temp <= 50; temp += 10) {
+                const lineCoords = [];
+                for (let p = 1000; p >= 100; p -= 50) {
+                    const coords = skewTransform(temp, p);
+                    lineCoords.push({ x: coords.x, y: coords.y });
+                }
+                
+                tempLines.push({
+                    x: lineCoords.map(c => c.x),
+                    y: lineCoords.map(c => c.y),
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: { 
+                        color: 'rgba(200, 200, 200, 0.3)', 
+                        width: 1,
+                        dash: temp % 20 === 0 ? 'solid' : 'dot'
+                    },
+                    showlegend: false,
+                    hoverinfo: 'skip',
+                    name: `${temp}°C`
+                });
+            }
+
+            // Add temperature lines to traces
+            traces.push(...tempLines);
+
+            // Create isobar lines (horizontal)
+            const pressureLines = [];
+            const majorPressures = [1000, 850, 700, 500, 300, 200, 100];
+            
+            majorPressures.forEach(pressure => {
+                const lineCoords = [];
+                for (let temp = -80; temp <= 50; temp += 10) {
+                    const coords = skewTransform(temp, pressure);
+                    lineCoords.push({ x: coords.x, y: coords.y });
+                }
+                
+                pressureLines.push({
+                    x: lineCoords.map(c => c.x),
+                    y: lineCoords.map(c => c.y),
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: { 
+                        color: 'rgba(150, 150, 150, 0.5)', 
+                        width: pressure === 1000 || pressure === 500 ? 2 : 1
+                    },
+                    showlegend: false,
+                    hoverinfo: 'skip',
+                    name: `${pressure} hPa`
+                });
+            });
+
+            // Add pressure lines to traces
+            traces.push(...pressureLines);
+
+            // Temperature profile (red line)
+            traces.push({
+                x: soundingData.map(d => d.tempCoords.x),
+                y: soundingData.map(d => d.tempCoords.y),
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'Temperature',
+                line: { color: '#e74c3c', width: 3 },
+                marker: { size: 6, color: '#e74c3c' },
+                text: soundingData.map(d => 
+                    `Pressure: ${d.pressure} hPa<br>` +
+                    `Temperature: ${d.temperature.toFixed(1)}°C<br>` +
+                    `Altitude: ~${pressureToAltitude(d.pressure).toFixed(0)} m`
+                ),
+                hovertemplate: '%{text}<extra></extra>'
+            });
+
+            // Dewpoint profile (green line)
+            traces.push({
+                x: soundingData.map(d => d.dewCoords.x),
+                y: soundingData.map(d => d.dewCoords.y),
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'Dewpoint',
+                line: { color: '#27ae60', width: 3 },
+                marker: { size: 6, color: '#27ae60' },
+                text: soundingData.map(d => 
+                    `Pressure: ${d.pressure} hPa<br>` +
+                    `Dewpoint: ${d.dewpoint.toFixed(1)}°C<br>` +
+                    `RH: ${d.rh.toFixed(0)}%<br>` +
+                    `Altitude: ~${pressureToAltitude(d.pressure).toFixed(0)} m`
+                ),
+                hovertemplate: '%{text}<extra></extra>'
+            });
+
+            // Wind barbs (on the right side of the chart)
+            if (windData_sounding.length > 0) {
+                const maxX = Math.max(...soundingData.map(d => d.tempCoords.x));
+                const windBarbX = maxX + 20; // Position wind barbs to the right
+                
+                traces.push({
+                    x: windData_sounding.map(() => windBarbX),
+                    y: windData_sounding.map(d => d.logP),
+                    type: 'scatter',
+                    mode: 'markers+text',
+                    name: 'Wind',
+                    marker: {
+                        symbol: 'arrow-up',
+                        size: windData_sounding.map(d => Math.max(8, d.windSpeed / 3)),
+                        color: '#3498db',
+                        angle: windData_sounding.map(d => d.windDir + 180),
+                        angleref: 'previous'
+                    },
+                    text: windData_sounding.map(d => `${d.windSpeed.toFixed(0)}`),
+                    textposition: 'middle right',
+                    textfont: { size: 8, color: '#2c3e50' },
+                    showlegend: true,
+                    hovertext: windData_sounding.map(d => 
+                        `Pressure: ${d.pressure} hPa<br>` +
+                        `Wind: ${d.windSpeed.toFixed(1)} knots<br>` +
+                        `Direction: ${d.windDir.toFixed(0)}°<br>` +
+                        `Altitude: ~${pressureToAltitude(d.pressure).toFixed(0)} m`
+                    ),
+                    hovertemplate: '%{hovertext}<extra></extra>'
+                });
+            }
+
+            const layout = {
+                title: `Atmospheric Sounding (Skew-T) - ${selectedTime.toLocaleString()}`,
+                xaxis: { 
+                    title: 'Temperature (°C) →',
+                    range: [-40, 40],
+                    gridcolor: 'rgba(200, 200, 200, 0.2)'
+                },
+                yaxis: { 
+                    title: '← Pressure (hPa)',
+                    type: 'log',
+                    autorange: 'reversed',
+                    range: [Math.log(1000), Math.log(100)],
+                    tickmode: 'array',
+                    tickvals: majorPressures.map(p => Math.log(p)),
+                    ticktext: majorPressures.map(p => `${p}`),
+                    gridcolor: 'rgba(150, 150, 150, 0.2)'
+                },
+                hovermode: 'closest',
+                showlegend: true,
+                legend: { x: 0.02, y: 0.98 },
+                margin: { t: 60, b: 80, l: 80, r: 120 },
+                plot_bgcolor: 'rgba(255, 255, 255, 0.9)',
+                annotations: [
+                    {
+                        text: 'Red: Temperature Profile<br>Green: Dewpoint Profile<br>Blue: Wind Barbs (knots)',
+                        showarrow: false,
+                        x: 0.98,
+                        y: 0.02,
+                        xref: 'paper',
+                        yref: 'paper',
+                        xanchor: 'right',
+                        yanchor: 'bottom',
+                        font: { size: 10, color: '#7f8c8d' },
+                        bgcolor: 'rgba(255, 255, 255, 0.8)',
+                        bordercolor: '#e0e6ed',
+                        borderwidth: 1
+                    },
+                    {
+                        text: 'Skew-T Log-P Diagram',
+                        showarrow: false,
+                        x: 0.5,
+                        y: 0.95,
+                        xref: 'paper',
+                        yref: 'paper',
+                        font: { size: 12, color: '#2c3e50' }
+                    }
+                ]
+            };
+
+            await Plotly.newPlot('skewTChart', traces, layout, { responsive: true });
+        }
+
+        async function loadDemoBoundaryLayerData(latitude, longitude, date, timezone) {
+            debugLog('Loading demo boundary layer height data...');
+            
+            try {
+                const startDate = new Date(date + 'T00:00:00');
+                const hours = 24;
+                const timeArray = [];
+                const boundaryLayerHeights = [];
+                const baseBLH = 500 + Math.random() * 300;
+                
+                for (let i = 0; i < hours; i++) {
+                    const currentTime = new Date(startDate.getTime() + i * 60 * 60 * 1000);
+                    timeArray.push(currentTime.toISOString());
+                    
+                    const hourFactor = Math.max(0.3, Math.sin((i - 6) * Math.PI / 12));
+                    const seasonalFactor = 0.8 + Math.random() * 0.4;
+                    const blh = baseBLH * (0.5 + hourFactor * 1.5) * seasonalFactor;
+                    boundaryLayerHeights.push(Math.max(100, blh));
+                }
+                
+                boundaryLayerData = {
+                    latitude: latitude,
+                    longitude: longitude,
+                    elevation: 50 + Math.random() * 100,
+                    timezone: timezone === 'auto' ? 'Europe/Paris' : timezone,
+                    hourly: {
+                        time: timeArray,
+                        boundary_layer_height: boundaryLayerHeights,
+                        temperature_2m: timeArray.map((_, i) => 15 + Math.sin((i - 6) * Math.PI / 12) * 8)
+                    }
+                };
+                
+                debugLog('Demo boundary layer data generated successfully');
+                return true;
+            } catch (error) {
+                debugLog('Error generating demo boundary layer data', error);
+                return false;
+            }
         }
 
         // Enable debug mode in browser console if needed
-        console.log('AROME Wind Analysis loaded. Ready to fetch data!');
+        console.log('AROME Wind Analysis with Skew-T loaded. Ready to fetch data!');
     </script>
 </body>
 </html>
