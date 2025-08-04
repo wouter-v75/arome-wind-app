@@ -1056,36 +1056,14 @@
             const times = windData.hourly.time.map(t => new Date(t));
             const traces = [];
 
-            pressureLevels.forEach(level => {
+            pressureLevels.forEach((level, levelIndex) => {
                 const directions = windData.hourly[level.dir_param];
+                const speeds = windData.hourly[level.param]; // Get wind speeds for scaling
                 if (!directions || directions.every(d => d === null || d === undefined)) return;
 
-                traces.push({
-                    x: times,
-                    y: directions,
-                    type: 'scatter',
-                    mode: 'markers',
-                    name: level.level,
-                    marker: { 
-                        color: level.color, 
-                        size: 15, // Increased from 6 to 15 for much better visibility
-                        symbol: 'arrow-up',
-                        angleref: 'previous',
-                        angle: directions.map(d => d !== null && d !== undefined ? d + 180 : null), // Rotate for wind direction
-                        line: {
-                            color: '#2c3e50', // Dark outline for better contrast
-                            width: 2 // Thick outline to make arrows stand out
-                        },
-                        opacity: 0.8 // Slight transparency to prevent overlap issues
-                    },
-                    text: directions.map((d, i) => 
-                        `Time: ${new Date(windData.hourly.time[i]).toLocaleTimeString()}<br>` +
-                        `Level: ${level.level}<br>` +
-                        `Direction: ${d !== null ? d.toFixed(0) + '°' : 'N/A'}<br>` +
-                        `Cardinal: ${degreesToCardinal(d)}`
-                    ),
-                    hovertemplate: '%{text}<extra></extra>'
-                });
+                // Create custom arrows with stems using line traces
+                const arrowTraces = createWindArrowsWithStems(times, directions, speeds, level, levelIndex);
+                traces.push(...arrowTraces);
             });
 
             // If no traces, show message
@@ -1096,7 +1074,7 @@
             }
 
             const layout = {
-                title: 'Wind Direction vs Time',
+                title: 'Wind Direction vs Time (Arrows with stems show wind direction)',
                 xaxis: { 
                     title: 'Time',
                     type: 'date'
@@ -1107,14 +1085,14 @@
                     tickvals: [0, 90, 180, 270, 360],
                     ticktext: ['N (0°)', 'E (90°)', 'S (180°)', 'W (270°)', 'N (360°)']
                 },
-                hovermode: 'closest', // Changed from 'x unified' to 'closest' for better arrow interaction
+                hovermode: 'closest',
                 legend: { 
                     orientation: 'h',
                     y: -0.2
                 },
-                margin: { t: 40, b: 80 },
+                margin: { t: 60, b: 80 },
                 annotations: [{
-                    text: 'Arrows point in wind direction<br>(where wind is blowing TO)',
+                    text: 'Arrows with stems point in wind direction<br>(where wind is blowing TO)<br>Arrow length scaled by wind speed',
                     showarrow: false,
                     x: 0.02,
                     y: 0.98,
@@ -1125,6 +1103,172 @@
             };
 
             await Plotly.newPlot('windDirectionChart', traces, layout, { responsive: true });
+        }
+
+        async function createWindDirectionChart() {
+            debugLog('Creating wind direction chart...');
+            
+            if (!windData || !windData.hourly) {
+                throw new Error('No wind data available');
+            }
+            
+            const times = windData.hourly.time.map(t => new Date(t));
+            const traces = [];
+
+            pressureLevels.forEach((level, levelIndex) => {
+                const directions = windData.hourly[level.dir_param];
+                const speeds = windData.hourly[level.param];
+                if (!directions || directions.every(d => d === null || d === undefined)) return;
+
+                // Create arrow stems and heads
+                const stemTraces = createWindArrowsWithStems(times, directions, speeds, level, levelIndex);
+                traces.push(...stemTraces);
+            });
+
+            // If no traces, show message
+            if (traces.length === 0) {
+                document.getElementById('windDirectionChart').innerHTML = 
+                    '<div style="text-align: center; padding: 50px; color: #7f8c8d;">No wind direction data available</div>';
+                return;
+            }
+
+            const layout = {
+                title: 'Wind Direction vs Time (Arrows with stems show wind direction)',
+                xaxis: { 
+                    title: 'Time',
+                    type: 'date'
+                },
+                yaxis: { 
+                    title: 'Wind Direction (degrees)',
+                    range: [-20, 380], // Extended range to accommodate arrow stems
+                    tickvals: [0, 90, 180, 270, 360],
+                    ticktext: ['N (0°)', 'E (90°)', 'S (180°)', 'W (270°)', 'N (360°)']
+                },
+                hovermode: 'closest',
+                legend: { 
+                    orientation: 'h',
+                    y: -0.2
+                },
+                margin: { t: 60, b: 80 },
+                annotations: [{
+                    text: 'Arrows with stems point in wind direction<br>(where wind is blowing TO)<br>Arrow length scaled by wind speed',
+                    showarrow: false,
+                    x: 0.02,
+                    y: 0.98,
+                    xref: 'paper',
+                    yref: 'paper',
+                    font: { size: 10, color: '#7f8c8d' }
+                }]
+            };
+
+            await Plotly.newPlot('windDirectionChart', traces, layout, { responsive: true });
+        }
+
+        function createWindArrowsWithStems(times, directions, speeds, level, levelIndex) {
+            const traces = [];
+            
+            // Arrays for stem lines
+            const stemX = [];
+            const stemY = [];
+            
+            // Arrays for arrow heads
+            const headX = [];
+            const headY = [];
+            
+            const hoverTexts = [];
+
+            directions.forEach((direction, timeIndex) => {
+                if (direction === null || direction === undefined) return;
+                
+                const speed = speeds ? speeds[timeIndex] : 10;
+                const speedKnots = kmhToKnots(speed);
+                
+                // Scale arrow length based on wind speed
+                const arrowLength = Math.max(20, Math.min(60, speedKnots * 3));
+                
+                // Convert wind direction to show where wind is blowing TO
+                const adjustedDirection = (direction + 180) % 360;
+                const dirRad = adjustedDirection * Math.PI / 180;
+                
+                // Level offset to separate different altitude levels visually
+                const levelOffset = (levelIndex - 4.5) * 12;
+                
+                // Calculate stem coordinates
+                const stemStartY = direction + levelOffset;
+                const stemEndY = stemStartY + Math.cos(dirRad) * arrowLength;
+                
+                // For time axis, create slight horizontal offset based on direction
+                const timeOffset = Math.sin(dirRad) * 1800000; // 30 minutes max offset
+                const stemStartX = times[timeIndex];
+                const stemEndX = new Date(times[timeIndex].getTime() + timeOffset);
+                
+                // Add stem coordinates
+                stemX.push(stemStartX, stemEndX, null); // null creates break between lines
+                stemY.push(stemStartY, stemEndY, null);
+                
+                // Create arrowhead (triangle)
+                const headSize = arrowLength * 0.4;
+                const headAngle1 = dirRad + Math.PI * 0.85; // Left wing
+                const headAngle2 = dirRad - Math.PI * 0.85; // Right wing
+                
+                const head1X = new Date(stemEndX.getTime() + Math.sin(headAngle1) * headSize * 1800000);
+                const head1Y = stemEndY + Math.cos(headAngle1) * headSize;
+                const head2X = new Date(stemEndX.getTime() + Math.sin(headAngle2) * headSize * 1800000);
+                const head2Y = stemEndY + Math.cos(headAngle2) * headSize;
+                
+                // Add triangle for arrowhead
+                headX.push(stemEndX, head1X, head2X, stemEndX, null);
+                headY.push(stemEndY, head1Y, head2Y, stemEndY, null);
+                
+                // Hover information
+                hoverTexts.push(
+                    `Time: ${times[timeIndex].toLocaleTimeString()}<br>` +
+                    `Level: ${level.level}<br>` +
+                    `Direction: ${direction.toFixed(0)}°<br>` +
+                    `Cardinal: ${degreesToCardinal(direction)}<br>` +
+                    `Speed: ${speedKnots.toFixed(1)} knots`
+                );
+            });
+
+            // Create stem trace (thick lines)
+            if (stemX.length > 0) {
+                traces.push({
+                    x: stemX,
+                    y: stemY,
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: `${level.level} stems`,
+                    line: {
+                        color: level.color,
+                        width: 4 // Thick stems for visibility
+                    },
+                    showlegend: false,
+                    hoverinfo: 'skip'
+                });
+            }
+
+            // Create arrowhead trace (filled triangles)
+            if (headX.length > 0) {
+                traces.push({
+                    x: headX,
+                    y: headY,
+                    type: 'scatter',
+                    mode: 'lines',
+                    fill: 'toself', // Fill each triangle
+                    fillcolor: level.color,
+                    name: level.level,
+                    line: {
+                        color: level.color,
+                        width: 2
+                    },
+                    opacity: 0.9,
+                    text: hoverTexts.flatMap(text => [text, text, text, text, null]), // Repeat for each triangle point
+                    hovertemplate: '%{text}<extra></extra>',
+                    showlegend: true
+                });
+            }
+
+            return traces;
         }
 
         // Helper function to convert degrees to cardinal directions
