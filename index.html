@@ -473,7 +473,7 @@
             { level: '925hPa', param: 'windspeed_925hPa', dir_param: 'winddirection_925hPa', altitude: 800, color: '#8e44ad' }
         ];
 
-        // Available pressure levels for sounding data
+        // Available pressure levels for sounding data (limited to boundary layer)
         const soundingLevels = [
             { level: 1000, param: 'temperature_1000hPa', rh_param: 'relative_humidity_1000hPa', wind_param: 'windspeed_1000hPa', dir_param: 'winddirection_1000hPa' },
             { level: 975, param: 'temperature_975hPa', rh_param: 'relative_humidity_975hPa', wind_param: 'windspeed_975hPa', dir_param: 'winddirection_975hPa' },
@@ -481,14 +481,7 @@
             { level: 925, param: 'temperature_925hPa', rh_param: 'relative_humidity_925hPa', wind_param: 'windspeed_925hPa', dir_param: 'winddirection_925hPa' },
             { level: 900, param: 'temperature_900hPa', rh_param: 'relative_humidity_900hPa', wind_param: 'windspeed_900hPa', dir_param: 'winddirection_900hPa' },
             { level: 875, param: 'temperature_875hPa', rh_param: 'relative_humidity_875hPa', wind_param: 'windspeed_875hPa', dir_param: 'winddirection_875hPa' },
-            { level: 850, param: 'temperature_850hPa', rh_param: 'relative_humidity_850hPa', wind_param: 'windspeed_850hPa', dir_param: 'winddirection_850hPa' },
-            { level: 800, param: 'temperature_800hPa', rh_param: 'relative_humidity_800hPa', wind_param: 'windspeed_800hPa', dir_param: 'winddirection_800hPa' },
-            { level: 750, param: 'temperature_750hPa', rh_param: 'relative_humidity_750hPa', wind_param: 'windspeed_750hPa', dir_param: 'winddirection_750hPa' },
-            { level: 700, param: 'temperature_700hPa', rh_param: 'relative_humidity_700hPa', wind_param: 'windspeed_700hPa', dir_param: 'winddirection_700hPa' },
-            { level: 650, param: 'temperature_650hPa', rh_param: 'relative_humidity_650hPa', wind_param: 'windspeed_650hPa', dir_param: 'winddirection_650hPa' },
-            { level: 600, param: 'temperature_600hPa', rh_param: 'relative_humidity_600hPa', wind_param: 'windspeed_600hPa', dir_param: 'winddirection_600hPa' },
-            { level: 550, param: 'temperature_550hPa', rh_param: 'relative_humidity_550hPa', wind_param: 'windspeed_550hPa', dir_param: 'winddirection_550hPa' },
-            { level: 500, param: 'temperature_500hPa', rh_param: 'relative_humidity_500hPa', wind_param: 'windspeed_500hPa', dir_param: 'winddirection_500hPa' }
+            { level: 850, param: 'temperature_850hPa', rh_param: 'relative_humidity_850hPa', wind_param: 'windspeed_850hPa', dir_param: 'winddirection_850hPa' }
         ];
 
         function showLoading() {
@@ -556,6 +549,51 @@
             }
             
             return decimal;
+        }
+
+        // Helper function to convert pressure to approximate altitude
+        function pressureToAltitude(pressure) {
+            // Standard atmosphere approximation: h = 44330 * (1 - (P/P0)^0.1903)
+            const P0 = 1013.25; // Sea level pressure in hPa
+            return 44330 * (1 - Math.pow(pressure / P0, 0.1903));
+        }
+
+        // Helper function to calculate dewpoint from temperature and relative humidity
+        function calculateDewpoint(temp, rh) {
+            // Magnus formula approximation
+            const a = 17.27;
+            const b = 237.7;
+            const alpha = ((a * temp) / (b + temp)) + Math.log(rh / 100);
+            return (b * alpha) / (a - alpha);
+        }
+
+        // Helper function for Skew-T coordinate transformation
+        function skewTransform(temp, pressure) {
+            // Skew the temperature axis (typically 45° skew)
+            const skewFactor = 0.7; // Adjust this for more/less skew
+            const logP = Math.log(pressure);
+            const skewedX = temp + skewFactor * (1000 - pressure) / 100;
+            return { x: skewedX, y: logP };
+        }
+
+        // Helper function to calculate dry adiabatic temperature
+        function calculateDryAdiabat(theta, pressure) {
+            // Dry adiabatic lapse rate: T = theta * (P/P0)^(R/Cp)
+            const P0 = 1000; // Reference pressure (hPa)
+            const kappa = 0.286; // R/Cp for dry air
+            return theta * Math.pow(pressure / P0, kappa);
+        }
+
+        // Helper function to calculate moist adiabatic temperature (simplified)
+        function calculateMoistAdiabat(tempC, pressure) {
+            // Simplified moist adiabatic calculation
+            // This is an approximation - real moist adiabats require iterative solutions
+            const tempK = tempC + 273.15;
+            const es = 6.112 * Math.exp(17.67 * tempC / (tempC + 243.5)); // Saturation vapor pressure
+            const ws = 0.622 * es / (pressure - es); // Saturation mixing ratio
+            const gamma_m = 9.8 * (1 + (2501000 * ws) / (287 * tempK)) / 
+                          (1004 + (2501000 * 2501000 * ws * 0.622) / (287 * tempK * tempK));
+            return tempC - gamma_m * (pressureToAltitude(1000) - pressureToAltitude(pressure)) / 1000;
         }
 
         async function fetchWindData() {
@@ -892,31 +930,6 @@
                 debugLog('Error generating demo wind data', error);
                 return false;
             }
-        }
-
-        // Helper function to convert pressure to approximate altitude
-        function pressureToAltitude(pressure) {
-            // Standard atmosphere approximation: h = 44330 * (1 - (P/P0)^0.1903)
-            const P0 = 1013.25; // Sea level pressure in hPa
-            return 44330 * (1 - Math.pow(pressure / P0, 0.1903));
-        }
-
-        // Helper function to calculate dewpoint from temperature and relative humidity
-        function calculateDewpoint(temp, rh) {
-            // Magnus formula approximation
-            const a = 17.27;
-            const b = 237.7;
-            const alpha = ((a * temp) / (b + temp)) + Math.log(rh / 100);
-            return (b * alpha) / (a - alpha);
-        }
-
-        // Helper function for Skew-T coordinate transformation
-        function skewTransform(temp, pressure) {
-            // Skew the temperature axis (typically 45° skew)
-            const skewFactor = 0.7; // Adjust this for more/less skew
-            const logP = Math.log(pressure);
-            const skewedX = temp + skewFactor * (1000 - pressure) / 100;
-            return { x: skewedX, y: logP };
         }
 
         async function loadDemoBoundaryLayerData(latitude, longitude, date, timezone) {
@@ -1461,26 +1474,6 @@
             }
         }
 
-        // Helper function to calculate dry adiabatic temperature
-        function calculateDryAdiabat(theta, pressure) {
-            // Dry adiabatic lapse rate: T = theta * (P/P0)^(R/Cp)
-            const P0 = 1000; // Reference pressure (hPa)
-            const kappa = 0.286; // R/Cp for dry air
-            return theta * Math.pow(pressure / P0, kappa);
-        }
-
-        // Helper function to calculate moist adiabatic temperature (simplified)
-        function calculateMoistAdiabat(tempC, pressure) {
-            // Simplified moist adiabatic calculation
-            // This is an approximation - real moist adiabats require iterative solutions
-            const tempK = tempC + 273.15;
-            const es = 6.112 * Math.exp(17.67 * tempC / (tempC + 243.5)); // Saturation vapor pressure
-            const ws = 0.622 * es / (pressure - es); // Saturation mixing ratio
-            const gamma_m = 9.8 * (1 + (2501000 * ws) / (287 * tempK)) / 
-                          (1004 + (2501000 * 2501000 * ws * 0.622) / (287 * tempK * tempK));
-            return tempC - gamma_m * (pressureToAltitude(1000) - pressureToAltitude(pressure)) / 1000;
-        }
-
         async function createSkewTChart() {
             debugLog('Creating Skew-T chart...');
             
@@ -1489,15 +1482,13 @@
             }
 
             const selectedTime = new Date(windData.hourly.time[selectedTimeIndex]);
+            const majorPressures = [1000, 975, 950, 925, 900, 875, 850]; // Limited to 850hPa
             
             // Extract sounding data for the selected time (limit to 850hPa and above)
             const soundingData = [];
             const windData_sounding = []; // For wind barbs
             
             soundingLevels.forEach(level => {
-                // Only include levels from 1000hPa to 850hPa
-                if (level.level < 850) return;
-                
                 const temp = windData.hourly[level.param]?.[selectedTimeIndex];
                 const rh = windData.hourly[level.rh_param]?.[selectedTimeIndex];
                 const windSpeed = windData.hourly[level.wind_param]?.[selectedTimeIndex];
@@ -1540,7 +1531,6 @@
             windData_sounding.sort((a, b) => b.pressure - a.pressure);
 
             const traces = [];
-            const majorPressures = [1000, 975, 950, 925, 900, 875, 850]; // Limited to 850hPa
 
             // Create background grid lines (isotherms)
             const tempLines = [];
