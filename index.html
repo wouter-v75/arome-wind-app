@@ -1461,6 +1461,26 @@
             }
         }
 
+        // Helper function to calculate dry adiabatic temperature
+        function calculateDryAdiabat(theta, pressure) {
+            // Dry adiabatic lapse rate: T = theta * (P/P0)^(R/Cp)
+            const P0 = 1000; // Reference pressure (hPa)
+            const kappa = 0.286; // R/Cp for dry air
+            return theta * Math.pow(pressure / P0, kappa);
+        }
+
+        // Helper function to calculate moist adiabatic temperature (simplified)
+        function calculateMoistAdiabat(tempC, pressure) {
+            // Simplified moist adiabatic calculation
+            // This is an approximation - real moist adiabats require iterative solutions
+            const tempK = tempC + 273.15;
+            const es = 6.112 * Math.exp(17.67 * tempC / (tempC + 243.5)); // Saturation vapor pressure
+            const ws = 0.622 * es / (pressure - es); // Saturation mixing ratio
+            const gamma_m = 9.8 * (1 + (2501000 * ws) / (287 * tempK)) / 
+                          (1004 + (2501000 * 2501000 * ws * 0.622) / (287 * tempK * tempK));
+            return tempC - gamma_m * (pressureToAltitude(1000) - pressureToAltitude(pressure)) / 1000;
+        }
+
         async function createSkewTChart() {
             debugLog('Creating Skew-T chart...');
             
@@ -1470,11 +1490,14 @@
 
             const selectedTime = new Date(windData.hourly.time[selectedTimeIndex]);
             
-            // Extract sounding data for the selected time
+            // Extract sounding data for the selected time (limit to 850hPa and above)
             const soundingData = [];
             const windData_sounding = []; // For wind barbs
             
             soundingLevels.forEach(level => {
+                // Only include levels from 1000hPa to 850hPa
+                if (level.level < 850) return;
+                
                 const temp = windData.hourly[level.param]?.[selectedTimeIndex];
                 const rh = windData.hourly[level.rh_param]?.[selectedTimeIndex];
                 const windSpeed = windData.hourly[level.wind_param]?.[selectedTimeIndex];
@@ -1517,12 +1540,13 @@
             windData_sounding.sort((a, b) => b.pressure - a.pressure);
 
             const traces = [];
+            const majorPressures = [1000, 975, 950, 925, 900, 875, 850]; // Limited to 850hPa
 
             // Create background grid lines (isotherms)
             const tempLines = [];
-            for (let temp = -80; temp <= 50; temp += 10) {
+            for (let temp = -40; temp <= 50; temp += 10) {
                 const lineCoords = [];
-                for (let p = 1000; p >= 100; p -= 50) {
+                for (let p = 1000; p >= 850; p -= 25) {
                     const coords = skewTransform(temp, p);
                     lineCoords.push({ x: coords.x, y: coords.y });
                 }
@@ -1533,13 +1557,13 @@
                     type: 'scatter',
                     mode: 'lines',
                     line: { 
-                        color: 'rgba(200, 200, 200, 0.3)', 
-                        width: 1,
+                        color: temp % 20 === 0 ? 'rgba(100, 100, 100, 0.4)' : 'rgba(200, 200, 200, 0.2)', 
+                        width: temp % 20 === 0 ? 1.5 : 1,
                         dash: temp % 20 === 0 ? 'solid' : 'dot'
                     },
                     showlegend: false,
                     hoverinfo: 'skip',
-                    name: `${temp}°C`
+                    name: `${temp}°C isotherm`
                 });
             }
 
@@ -1548,11 +1572,9 @@
 
             // Create isobar lines (horizontal)
             const pressureLines = [];
-            const majorPressures = [1000, 850, 700, 500, 300, 200, 100];
-            
             majorPressures.forEach(pressure => {
                 const lineCoords = [];
-                for (let temp = -80; temp <= 50; temp += 10) {
+                for (let temp = -40; temp <= 50; temp += 5) {
                     const coords = skewTransform(temp, pressure);
                     lineCoords.push({ x: coords.x, y: coords.y });
                 }
@@ -1563,17 +1585,118 @@
                     type: 'scatter',
                     mode: 'lines',
                     line: { 
-                        color: 'rgba(150, 150, 150, 0.5)', 
-                        width: pressure === 1000 || pressure === 500 ? 2 : 1
+                        color: 'rgba(100, 100, 100, 0.6)', 
+                        width: [1000, 925, 850].includes(pressure) ? 2 : 1
                     },
                     showlegend: false,
                     hoverinfo: 'skip',
-                    name: `${pressure} hPa`
+                    name: `${pressure} hPa isobar`
                 });
             });
 
             // Add pressure lines to traces
             traces.push(...pressureLines);
+
+            // Add dry adiabatic lines (potential temperature lines)
+            const dryAdiabats = [];
+            for (let theta = -20; theta <= 50; theta += 10) {
+                const adiabatCoords = [];
+                for (let p = 1000; p >= 850; p -= 25) {
+                    const temp = calculateDryAdiabat(theta, p);
+                    const coords = skewTransform(temp, p);
+                    adiabatCoords.push({ x: coords.x, y: coords.y });
+                }
+                
+                dryAdiabats.push({
+                    x: adiabatCoords.map(c => c.x),
+                    y: adiabatCoords.map(c => c.y),
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: { 
+                        color: 'rgba(255, 140, 0, 0.4)', 
+                        width: 1,
+                        dash: 'dash'
+                    },
+                    showlegend: false,
+                    hoverinfo: 'skip',
+                    name: `${theta}°C dry adiabat`
+                });
+            }
+
+            // Add dry adiabatic lines to traces
+            traces.push(...dryAdiabats);
+
+            // Add moist adiabatic lines (simplified)
+            const moistAdiabats = [];
+            for (let startTemp = -10; startTemp <= 30; startTemp += 10) {
+                const moistCoords = [];
+                for (let p = 1000; p >= 850; p -= 25) {
+                    const temp = calculateMoistAdiabat(startTemp, p);
+                    if (!isNaN(temp) && isFinite(temp)) {
+                        const coords = skewTransform(temp, p);
+                        moistCoords.push({ x: coords.x, y: coords.y });
+                    }
+                }
+                
+                if (moistCoords.length > 1) {
+                    moistAdiabats.push({
+                        x: moistCoords.map(c => c.x),
+                        y: moistCoords.map(c => c.y),
+                        type: 'scatter',
+                        mode: 'lines',
+                        line: { 
+                            color: 'rgba(0, 150, 255, 0.4)', 
+                            width: 1,
+                            dash: 'dashdot'
+                        },
+                        showlegend: false,
+                        hoverinfo: 'skip',
+                        name: `${startTemp}°C moist adiabat`
+                    });
+                }
+            }
+
+            // Add moist adiabatic lines to traces
+            traces.push(...moistAdiabats);
+
+            // Add mixing ratio lines
+            const mixingRatioLines = [];
+            const mixingRatios = [1, 2, 4, 7, 10, 16, 24]; // g/kg
+            
+            mixingRatios.forEach(mr => {
+                const mrCoords = [];
+                for (let p = 1000; p >= 850; p -= 25) {
+                    // Calculate temperature for given mixing ratio and pressure
+                    // Using approximation: e = (mr * p) / (622 + mr)
+                    const e = (mr * p) / (622 + mr); // Vapor pressure
+                    const temp = (243.5 * Math.log(e / 6.112)) / (17.67 - Math.log(e / 6.112)); // From Magnus formula
+                    
+                    if (!isNaN(temp) && isFinite(temp) && temp > -50 && temp < 50) {
+                        const coords = skewTransform(temp, p);
+                        mrCoords.push({ x: coords.x, y: coords.y });
+                    }
+                }
+                
+                if (mrCoords.length > 1) {
+                    mixingRatioLines.push({
+                        x: mrCoords.map(c => c.x),
+                        y: mrCoords.map(c => c.y),
+                        type: 'scatter',
+                        mode: 'lines',
+                        line: { 
+                            color: 'rgba(0, 200, 0, 0.3)', 
+                            width: 1,
+                            dash: 'dot'
+                        },
+                        showlegend: false,
+                        hoverinfo: 'skip',
+                        name: `${mr} g/kg mixing ratio`
+                    });
+                }
+            });
+
+            // Add mixing ratio lines to traces
+            traces.push(...mixingRatioLines);
 
             // Temperature profile (red line)
             traces.push({
@@ -1582,8 +1705,8 @@
                 type: 'scatter',
                 mode: 'lines+markers',
                 name: 'Temperature',
-                line: { color: '#e74c3c', width: 3 },
-                marker: { size: 6, color: '#e74c3c' },
+                line: { color: '#e74c3c', width: 4 },
+                marker: { size: 8, color: '#e74c3c', line: { color: '#c0392b', width: 2 } },
                 text: soundingData.map(d => 
                     `Pressure: ${d.pressure} hPa<br>` +
                     `Temperature: ${d.temperature.toFixed(1)}°C<br>` +
@@ -1599,8 +1722,8 @@
                 type: 'scatter',
                 mode: 'lines+markers',
                 name: 'Dewpoint',
-                line: { color: '#27ae60', width: 3 },
-                marker: { size: 6, color: '#27ae60' },
+                line: { color: '#27ae60', width: 4 },
+                marker: { size: 8, color: '#27ae60', line: { color: '#229954', width: 2 } },
                 text: soundingData.map(d => 
                     `Pressure: ${d.pressure} hPa<br>` +
                     `Dewpoint: ${d.dewpoint.toFixed(1)}°C<br>` +
@@ -1610,10 +1733,11 @@
                 hovertemplate: '%{text}<extra></extra>'
             });
 
-            // Wind barbs (on the right side of the chart)
+            // Wind barbs (positioned well to the right with better spacing)
             if (windData_sounding.length > 0) {
-                const maxX = Math.max(...soundingData.map(d => d.tempCoords.x));
-                const windBarbX = maxX + 20; // Position wind barbs to the right
+                const minX = Math.min(...soundingData.map(d => Math.min(d.tempCoords.x, d.dewCoords.x)));
+                const maxX = Math.max(...soundingData.map(d => Math.max(d.tempCoords.x, d.dewCoords.x)));
+                const windBarbX = maxX + (maxX - minX) * 0.3; // Position wind barbs well to the right
                 
                 traces.push({
                     x: windData_sounding.map(() => windBarbX),
@@ -1623,14 +1747,15 @@
                     name: 'Wind',
                     marker: {
                         symbol: 'arrow-up',
-                        size: windData_sounding.map(d => Math.max(8, d.windSpeed / 3)),
+                        size: windData_sounding.map(d => Math.max(12, Math.min(20, d.windSpeed / 2))),
                         color: '#3498db',
                         angle: windData_sounding.map(d => d.windDir + 180),
-                        angleref: 'previous'
+                        angleref: 'previous',
+                        line: { color: '#2980b9', width: 2 }
                     },
-                    text: windData_sounding.map(d => `${d.windSpeed.toFixed(0)}`),
+                    text: windData_sounding.map(d => `${d.windSpeed.toFixed(0)}kt`),
                     textposition: 'middle right',
-                    textfont: { size: 8, color: '#2c3e50' },
+                    textfont: { size: 10, color: '#2c3e50', family: 'Arial Black' },
                     showlegend: true,
                     hovertext: windData_sounding.map(d => 
                         `Pressure: ${d.pressure} hPa<br>` +
@@ -1646,27 +1771,29 @@
                 title: `Atmospheric Sounding (Skew-T) - ${selectedTime.toLocaleString()}`,
                 xaxis: { 
                     title: 'Temperature (°C) →',
-                    range: [-40, 40],
-                    gridcolor: 'rgba(200, 200, 200, 0.2)'
+                    range: [-30, 45],
+                    gridcolor: 'rgba(200, 200, 200, 0.1)'
                 },
                 yaxis: { 
                     title: '← Pressure (hPa)',
                     type: 'log',
                     autorange: 'reversed',
-                    range: [Math.log(1000), Math.log(100)],
+                    range: [Math.log(1000), Math.log(850)], // Limited to 850hPa
                     tickmode: 'array',
                     tickvals: majorPressures.map(p => Math.log(p)),
                     ticktext: majorPressures.map(p => `${p}`),
-                    gridcolor: 'rgba(150, 150, 150, 0.2)'
+                    gridcolor: 'rgba(100, 100, 100, 0.3)'
                 },
                 hovermode: 'closest',
                 showlegend: true,
-                legend: { x: 0.02, y: 0.98 },
-                margin: { t: 60, b: 80, l: 80, r: 120 },
-                plot_bgcolor: 'rgba(255, 255, 255, 0.9)',
+                legend: { x: 0.02, y: 0.98, bgcolor: 'rgba(255, 255, 255, 0.9)', bordercolor: '#bdc3c7', borderwidth: 1 },
+                margin: { t: 60, b: 80, l: 80, r: 180 }, // Increased right margin for wind barbs
+                plot_bgcolor: 'rgba(255, 255, 255, 0.95)',
                 annotations: [
                     {
-                        text: 'Red: Temperature Profile<br>Green: Dewpoint Profile<br>Blue: Wind Barbs (knots)',
+                        text: 'Red: Temperature • Green: Dewpoint • Blue: Wind Barbs<br>' +
+                              'Orange dashed: Dry adiabats • Blue dotted: Moist adiabats<br>' +
+                              'Green dots: Mixing ratio lines (g/kg)',
                         showarrow: false,
                         x: 0.98,
                         y: 0.02,
@@ -1674,19 +1801,19 @@
                         yref: 'paper',
                         xanchor: 'right',
                         yanchor: 'bottom',
-                        font: { size: 10, color: '#7f8c8d' },
-                        bgcolor: 'rgba(255, 255, 255, 0.8)',
-                        bordercolor: '#e0e6ed',
+                        font: { size: 9, color: '#2c3e50' },
+                        bgcolor: 'rgba(255, 255, 255, 0.9)',
+                        bordercolor: '#bdc3c7',
                         borderwidth: 1
                     },
                     {
-                        text: 'Skew-T Log-P Diagram',
+                        text: 'Skew-T Log-P Diagram (Surface to 850hPa)',
                         showarrow: false,
                         x: 0.5,
                         y: 0.95,
                         xref: 'paper',
                         yref: 'paper',
-                        font: { size: 12, color: '#2c3e50' }
+                        font: { size: 14, color: '#2c3e50', family: 'Arial Black' }
                     }
                 ]
             };
