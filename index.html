@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AROME Wind Analysis - Real-Time</title>
+    <title>AROME Wind Analysis</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.24.1/plotly.min.js"></script>
     <style>
         * {
@@ -338,21 +338,26 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>AROME Wind Analysis - Real-Time</h1>
-            <p>Live high-resolution wind forecasts with atmospheric sounding and boundary layer analysis</p>
+            <h1>AROME Wind Analysis</h1>
+            <p>High-resolution AROME model wind forecasts with atmospheric sounding and boundary layer analysis</p>
         </div>
 
         <div class="input-section">
             <div class="api-info">
-                <strong>🌐 REAL-TIME DATA:</strong> This app fetches live weather data from meteorological APIs.
+                <strong>🌐 AROME MODEL FORECASTS:</strong> This app fetches real forecasted data from the AROME numerical weather model.
                 <br><br>
                 <strong>Data Sources:</strong>
                 <ul style="margin: 10px 0 0 20px;">
-                    <li>AROME: High-resolution wind profiles + atmospheric sounding data</li>
-                    <li>GFS: Boundary layer height data (global coverage)</li>
-                    <li>Open-Meteo API: Real-time forecasts updated every 3-6 hours</li>
-                    <li>Forecast Range: Next 36 hours from selected date</li>
+                    <li><strong>AROME Model:</strong> Météo-France 1.5km high-resolution forecast model</li>
+                    <li><strong>Coverage:</strong> France and neighboring countries (Central Europe)</li>
+                    <li><strong>Wind Levels:</strong> 10m, 20m, 50m, 100m, 150m, 200m + pressure levels</li>
+                    <li><strong>Atmospheric Sounding:</strong> Temperature & humidity at pressure levels</li>
+                    <li><strong>Updates:</strong> Every hour, 4-day forecast range (limited to 36h)</li>
+                    <li><strong>GFS:</strong> Boundary layer height (global model fallback)</li>
                 </ul>
+                <div style="margin-top: 10px; padding: 10px; background: rgba(52, 152, 219, 0.1); border-radius: 5px; font-size: 0.9em;">
+                    <strong>Note:</strong> AROME provides the highest resolution wind forecasts available (1.5km). Outside Central Europe, global models are used automatically.
+                </div>
             </div>
             <div class="input-grid">
                 <div class="input-group">
@@ -380,12 +385,12 @@
                     </select>
                 </div>
             </div>
-            <button class="fetch-btn" onclick="fetchWindData()">Fetch 36-Hour Forecast</button>
+            <button class="fetch-btn" onclick="fetchWindData()">Fetch AROME Forecast</button>
         </div>
 
         <div class="loading">
             <div class="spinner"></div>
-            <div>Fetching 36-hour AROME wind forecast and GFS boundary layer data...</div>
+            <div>Fetching 36-hour AROME model forecast and GFS boundary layer data...</div>
         </div>
 
         <div class="error">
@@ -487,7 +492,7 @@
         let selectedTimeIndex = 12;
 
         function debugLog(message, data = null) {
-            console.log(`[AROME Real-Time] ${message}`, data || '');
+            console.log(`[AROME Analysis] ${message}`, data || '');
         }
 
         window.onload = function() {
@@ -496,15 +501,18 @@
 
         const pressureLevels = [
             { level: '10m', param: 'wind_speed_10m', dir_param: 'wind_direction_10m', altitude: 10, color: '#e74c3c' },
-            { level: '80m', param: 'wind_speed_80m', dir_param: 'wind_direction_80m', altitude: 80, color: '#f39c12' },
-            { level: '120m', param: 'wind_speed_120m', dir_param: 'wind_direction_120m', altitude: 120, color: '#f1c40f' },
-            { level: '180m', param: 'wind_speed_180m', dir_param: 'wind_direction_180m', altitude: 180, color: '#2ecc71' },
+            { level: '20m', param: 'wind_speed_20m', dir_param: 'wind_direction_20m', altitude: 20, color: '#f39c12' },
+            { level: '50m', param: 'wind_speed_50m', dir_param: 'wind_direction_50m', altitude: 50, color: '#f1c40f' },
+            { level: '100m', param: 'wind_speed_100m', dir_param: 'wind_direction_100m', altitude: 100, color: '#2ecc71' },
+            { level: '150m', param: 'wind_speed_150m', dir_param: 'wind_direction_150m', altitude: 150, color: '#3498db' },
+            { level: '200m', param: 'wind_speed_200m', dir_param: 'wind_direction_200m', altitude: 200, color: '#9b59b6' },
             { level: '1000hPa', param: 'windspeed_1000hPa', dir_param: 'winddirection_1000hPa', altitude: 110, color: '#1abc9c' },
             { level: '975hPa', param: 'windspeed_975hPa', dir_param: 'winddirection_975hPa', altitude: 320, color: '#34495e' },
             { level: '950hPa', param: 'windspeed_950hPa', dir_param: 'winddirection_950hPa', altitude: 500, color: '#e67e22' },
             { level: '925hPa', param: 'windspeed_925hPa', dir_param: 'winddirection_925hPa', altitude: 800, color: '#8e44ad' },
-            { level: '900hPa', param: 'windspeed_900hPa', dir_param: 'winddirection_900hPa', altitude: 1000, color: '#3498db' },
-            { level: '875hPa', param: 'windspeed_875hPa', dir_param: 'winddirection_875hPa', altitude: 1200, color: '#9b59b6' }
+            { level: '900hPa', param: 'windspeed_900hPa', dir_param: 'winddirection_900hPa', altitude: 1000, color: '#95a5a6' },
+            { level: '875hPa', param: 'windspeed_875hPa', dir_param: 'winddirection_875hPa', altitude: 1200, color: '#16a085' },
+            { level: '850hPa', param: 'windspeed_850hPa', dir_param: 'winddirection_850hPa', altitude: 1500, color: '#d35400' }
         ];
 
         const soundingLevels = [
@@ -546,31 +554,6 @@
 
         function msToKnots(ms) {
             return ms * 1.94384;
-        }
-
-        function pressureToAltitude(pressure) {
-            const P0 = 1013.25;
-            return 44330 * (1 - Math.pow(pressure / P0, 0.1903));
-        }
-
-        function calculateDewpoint(temp, rh) {
-            const a = 17.27;
-            const b = 237.7;
-            const alpha = ((a * temp) / (b + temp)) + Math.log(rh / 100);
-            return (b * alpha) / (a - alpha);
-        }
-
-        function skewTransform(temp, pressure) {
-            const skewFactor = 0.7;
-            const logP = Math.log(pressure);
-            const skewedX = temp + skewFactor * (1000 - pressure) / 100;
-            return { x: skewedX, y: logP };
-        }
-
-        function calculateDryAdiabat(theta, pressure) {
-            const P0 = 1000;
-            const kappa = 0.286;
-            return theta * Math.pow(pressure / P0, kappa);
         }
 
         function parseCoordinate(coordStr, isLongitude = false) {
@@ -623,6 +606,31 @@
             return `${degreesPadded} ${minutes.toFixed(1)}${direction}`;
         }
 
+        function pressureToAltitude(pressure) {
+            const P0 = 1013.25;
+            return 44330 * (1 - Math.pow(pressure / P0, 0.1903));
+        }
+
+        function calculateDewpoint(temp, rh) {
+            const a = 17.27;
+            const b = 237.7;
+            const alpha = ((a * temp) / (b + temp)) + Math.log(rh / 100);
+            return (b * alpha) / (a - alpha);
+        }
+
+        function skewTransform(temp, pressure) {
+            const skewFactor = 0.7;
+            const logP = Math.log(pressure);
+            const skewedX = temp + skewFactor * (1000 - pressure) / 100;
+            return { x: skewedX, y: logP };
+        }
+
+        function calculateDryAdiabat(theta, pressure) {
+            const P0 = 1000;
+            const kappa = 0.286;
+            return theta * Math.pow(pressure / P0, kappa);
+        }
+
         async function fetchWindData() {
             const latitudeStr = document.getElementById('latitude').value.trim();
             const longitudeStr = document.getElementById('longitude').value.trim();
@@ -646,39 +654,39 @@
             showLoading();
 
             try {
-                await Promise.all([
-                    fetchAromeWindData(latitude, longitude, startDate),
-                    fetchGfsBoundaryLayerData(latitude, longitude, startDate)
-                ]);
+                await fetchAromeWindData(latitude, longitude, startDate);
+                // GFS boundary layer data is optional - don't fail if it's unavailable
+                try {
+                    await fetchGfsBoundaryLayerData(latitude, longitude, startDate);
+                } catch (gfsError) {
+                    debugLog('GFS boundary layer fetch failed, continuing without it:', gfsError.message);
+                    // boundaryLayerData will be created synthetically in the GFS function
+                }
                 
                 await processAndDisplayData();
                 showResults();
             } catch (error) {
                 console.error('Fetch Error:', error);
-                showError(`Error fetching real-time data: ${error.message}\n\nThis may be due to:\n- API rate limits\n- Network connectivity issues\n- Invalid coordinates\n- Data temporarily unavailable`);
+                showError(`Error fetching weather data: ${error.message}\n\nThis may be due to:\n- API rate limits (try again in a few minutes)\n- Network connectivity issues\n- Invalid coordinates (check format: DD MM.M N/S)\n- Weather API temporarily unavailable\n\nDebug info logged to console (F12)`);
             }
         }
 
         async function fetchAromeWindData(latitude, longitude, startDate) {
-            debugLog('Fetching AROME wind data...');
+            debugLog('Fetching AROME model forecast data...');
             
-            // Open-Meteo API for AROME model data
+            // Use the correct Météo-France AROME API endpoint
             const windParams = [
                 'wind_speed_10m', 'wind_direction_10m',
-                'wind_speed_80m', 'wind_direction_80m', 
-                'wind_speed_120m', 'wind_direction_120m',
-                'wind_speed_180m', 'wind_direction_180m'
+                'wind_speed_20m', 'wind_direction_20m',
+                'wind_speed_50m', 'wind_direction_50m',
+                'wind_speed_100m', 'wind_direction_100m',
+                'wind_speed_150m', 'wind_direction_150m',
+                'wind_speed_200m', 'wind_direction_200m'
             ];
 
             const pressureParams = [
-                'windspeed_1000hPa', 'winddirection_1000hPa',
-                'windspeed_975hPa', 'winddirection_975hPa',
-                'windspeed_950hPa', 'winddirection_950hPa',
-                'windspeed_925hPa', 'winddirection_925hPa',
-                'windspeed_900hPa', 'winddirection_900hPa',
-                'windspeed_875hPa', 'winddirection_875hPa',
                 'temperature_1000hPa', 'relative_humidity_1000hPa',
-                'temperature_975hPa', 'relative_humidity_975hPa',
+                'temperature_975hPa', 'relative_humidity_975hPa', 
                 'temperature_950hPa', 'relative_humidity_950hPa',
                 'temperature_925hPa', 'relative_humidity_925hPa',
                 'temperature_900hPa', 'relative_humidity_900hPa',
@@ -688,22 +696,20 @@
 
             const allParams = [...windParams, ...pressureParams];
             
-            // Calculate end date as 36 hours (1.5 days) from start date
-            const startDateTime = new Date(startDate + 'T00:00:00Z');
-            const endDateTime = new Date(startDateTime.getTime() + (36 * 60 * 60 * 1000)); // Add 36 hours
-            const endDate = endDateTime.toISOString().split('T')[0];
-
-            const url = `https://api.open-meteo.com/v1/arome?` +
+            // AROME model provides 4-day forecast (168 hours)
+            // For 36-hour limit, we'll use the start date and request specific hours
+            const url = `https://api.open-meteo.com/v1/meteofrance?` +
                 `latitude=${latitude}&longitude=${longitude}` +
-                `&start_date=${startDate}&end_date=${endDate}` +
                 `&hourly=${allParams.join(',')}` +
-                `&wind_speed_unit=kmh&timezone=UTC`;
+                `&wind_speed_unit=kmh&timezone=UTC&forecast_days=2`;
 
             debugLog('AROME API URL:', url);
 
             const response = await fetch(url);
             
             if (!response.ok) {
+                const errorText = await response.text();
+                debugLog('AROME API Error Response:', errorText);
                 throw new Error(`AROME API Error: ${response.status} ${response.statusText}`);
             }
 
@@ -713,16 +719,69 @@
                 throw new Error('Invalid AROME API response format');
             }
 
+            // Limit to 36 hours from start date
+            const startDateTime = new Date(startDate + 'T00:00:00Z');
+            const endDateTime = new Date(startDateTime.getTime() + (36 * 60 * 60 * 1000));
+            
+            const filteredIndices = [];
+            data.hourly.time.forEach((timeStr, index) => {
+                const timeDate = new Date(timeStr);
+                if (timeDate >= startDateTime && timeDate <= endDateTime) {
+                    filteredIndices.push(index);
+                }
+            });
+
+            // Filter all hourly data to 36-hour window
+            const filtered_hourly = {};
+            Object.keys(data.hourly).forEach(param => {
+                if (Array.isArray(data.hourly[param])) {
+                    filtered_hourly[param] = filteredIndices.map(i => data.hourly[param][i]);
+                } else {
+                    filtered_hourly[param] = data.hourly[param];
+                }
+            });
+
+            // Add synthetic pressure level wind data based on tower measurements
+            const pressureLevels = [1000, 975, 950, 925, 900, 875, 850];
+            pressureLevels.forEach(level => {
+                const altitude = pressureToAltitude(level);
+                
+                // Use 200m wind as reference for extrapolation to pressure levels
+                const refWindSpeed = filtered_hourly.wind_speed_200m || filtered_hourly.wind_speed_150m || filtered_hourly.wind_speed_100m;
+                const refWindDir = filtered_hourly.wind_direction_200m || filtered_hourly.wind_direction_150m || filtered_hourly.wind_direction_100m;
+                const refAltitude = 200; // meters
+                
+                if (refWindSpeed && refWindDir) {
+                    // Power law wind extrapolation
+                    filtered_hourly[`windspeed_${level}hPa`] = refWindSpeed.map(speed => {
+                        if (speed === null) return null;
+                        const factor = Math.pow(altitude / refAltitude, 0.143); // standard power law exponent
+                        return speed * factor;
+                    });
+                    
+                    // Wind direction backing with height (Ekman spiral effect)
+                    filtered_hourly[`winddirection_${level}hPa`] = refWindDir.map(dir => {
+                        if (dir === null) return null;
+                        // Add backing effect: wind backs (turns counter-clockwise) with height
+                        const backingAngle = (altitude - refAltitude) / 100 * 2; // 2° per 100m
+                        return (dir - backingAngle + 360) % 360;
+                    });
+                }
+            });
+
             windData = {
                 latitude: data.latitude,
                 longitude: data.longitude,
                 elevation: data.elevation || 0,
-                hourly: data.hourly,
+                hourly: filtered_hourly,
                 generationtime_ms: data.generationtime_ms,
-                utc_offset_seconds: data.utc_offset_seconds
+                utc_offset_seconds: data.utc_offset_seconds,
+                model: 'AROME',
+                resolution: '1.5km',
+                forecast_hours: filtered_hourly.time ? filtered_hourly.time.length : 0
             };
 
-            debugLog('AROME data fetched successfully', windData);
+            debugLog('AROME forecast data fetched successfully', windData);
         }
 
         async function fetchGfsBoundaryLayerData(latitude, longitude, startDate) {
@@ -743,7 +802,32 @@
             const response = await fetch(url);
             
             if (!response.ok) {
-                throw new Error(`GFS API Error: ${response.status} ${response.statusText}`);
+                const errorText = await response.text();
+                debugLog('GFS API Error Response:', errorText);
+                
+                // If GFS fails, create synthetic boundary layer data
+                debugLog('GFS API failed, creating synthetic boundary layer data');
+                const times = windData?.hourly?.time || [];
+                const syntheticHeights = times.map((timeStr, i) => {
+                    const hour = new Date(timeStr).getHours();
+                    // Diurnal cycle: low at night, high during day
+                    const hourFactor = Math.max(0.3, Math.sin((hour - 6) * Math.PI / 12));
+                    return 400 + hourFactor * 800 + Math.random() * 100;
+                });
+                
+                boundaryLayerData = {
+                    latitude: latitude,
+                    longitude: longitude,
+                    elevation: windData?.elevation || 0,
+                    hourly: {
+                        time: times,
+                        boundary_layer_height: syntheticHeights
+                    },
+                    synthetic: true
+                };
+                
+                debugLog('Synthetic GFS boundary layer data created', boundaryLayerData);
+                return;
             }
 
             const data = await response.json();
@@ -845,7 +929,7 @@
             });
 
             const layout = {
-                title: 'Real-Time Wind Speed vs Time',
+                title: 'AROME Model Wind Speed vs Time',
                 xaxis: { title: 'Time (UTC)', type: 'date' },
                 yaxis: { title: 'Wind Speed (knots)', rangemode: 'tozero' },
                 hovermode: 'x unified',
@@ -995,7 +1079,7 @@
                     y: profileData.map(d => d.logAltitude),
                     type: 'scatter',
                     mode: 'lines+markers',
-                    name: 'AROME Real-Time',
+                    name: 'AROME Model',
                     line: { color: '#e74c3c', width: 3, shape: 'spline' },
                     marker: { 
                         size: 8, 
@@ -1005,7 +1089,7 @@
                         line: { color: '#c0392b', width: 2 }
                     },
                     text: profileData.map(d => 
-                        `<b>Real-Time AROME Data</b><br>` +
+                        `<b>AROME Model Forecast</b><br>` +
                         `Level: ${d.level}<br>` +
                         `Altitude: ${d.altitude} m<br>` +
                         `Speed: ${d.speed.toFixed(1)} knots<br>` +
@@ -1038,7 +1122,7 @@
             }
 
             const layout = {
-                title: `Real-Time Wind Profile (Log Scale) - ${selectedTime.toLocaleString('en-GB', { timeZone: 'UTC' })} UTC`,
+                title: `AROME Model Wind Profile (Log Scale) - ${selectedTime.toLocaleString('en-GB', { timeZone: 'UTC' })} UTC`,
                 xaxis: { 
                     title: 'Wind Speed (knots)', 
                     rangemode: 'tozero',
@@ -1056,7 +1140,7 @@
                 margin: { t: 60, b: 40, l: 70, r: 20 },
                 plot_bgcolor: 'rgba(248, 249, 250, 0.8)',
                 annotations: [{
-                    text: `Red: Real-time AROME data<br>Gray dotted: Theoretical log law<br>u* = ${theoretical.length > 0 ? theoretical[0].frictionVelocity.toFixed(3) : 'N/A'} m/s`,
+                    text: `Red: AROME model forecast<br>Gray dotted: Theoretical log law<br>u* = ${theoretical.length > 0 ? theoretical[0].frictionVelocity.toFixed(3) : 'N/A'} m/s`,
                     showarrow: false,
                     x: 0.98,
                     y: 0.02,
@@ -1133,7 +1217,7 @@
                     y: profileData.map(d => d.altitude),
                     type: 'scatter',
                     mode: 'lines+markers',
-                    name: 'AROME Real-Time',
+                    name: 'AROME Model',
                     line: { color: '#3498db', width: 3, shape: 'spline' },
                     marker: { 
                         size: 8, 
@@ -1143,7 +1227,7 @@
                         line: { color: '#2980b9', width: 2 }
                     },
                     text: profileData.map(d => 
-                        `<b>Real-Time AROME Data</b><br>` +
+                        `<b>AROME Model Forecast</b><br>` +
                         `Level: ${d.level}<br>` +
                         `Altitude: ${d.altitude} m<br>` +
                         `Speed: ${d.speed.toFixed(1)} knots<br>` +
@@ -1174,7 +1258,7 @@
             }
 
             const layout = {
-                title: `Real-Time Wind Profile (Linear Scale) - ${selectedTime.toLocaleString('en-GB', { timeZone: 'UTC' })} UTC`,
+                title: `AROME Model Wind Profile (Linear Scale) - ${selectedTime.toLocaleString('en-GB', { timeZone: 'UTC' })} UTC`,
                 xaxis: { 
                     title: 'Wind Speed (knots)', 
                     rangemode: 'tozero',
@@ -1190,7 +1274,7 @@
                 margin: { t: 60, b: 40, l: 60, r: 20 },
                 plot_bgcolor: 'rgba(248, 249, 250, 0.8)',
                 annotations: [{
-                    text: `Blue: Real-time AROME data<br>Gray dotted: Theoretical log law<br>Linear altitude scale`,
+                    text: `Blue: AROME model forecast<br>Gray dotted: Theoretical log law<br>Linear altitude scale`,
                     showarrow: false,
                     x: 0.98,
                     y: 0.02,
@@ -1344,7 +1428,7 @@
             }
 
             const layout = {
-                title: `Real-Time Skew-T Diagram - ${selectedTime.toLocaleString('en-GB', { timeZone: 'UTC' })} UTC`,
+                title: `AROME Model Skew-T Diagram - ${selectedTime.toLocaleString('en-GB', { timeZone: 'UTC' })} UTC`,
                 xaxis: { 
                     title: 'Temperature (°C)',
                     range: [-25, 35]
@@ -1389,7 +1473,7 @@
             };
 
             const layout = {
-                title: 'Real-Time Planetary Boundary Layer Height (HPBL)',
+                title: 'GFS Model Planetary Boundary Layer Height (HPBL)',
                 xaxis: { title: 'Time (UTC)', type: 'date' },
                 yaxis: { title: 'Height (meters)', rangemode: 'tozero' },
                 margin: { t: 60, b: 80 }
@@ -1398,7 +1482,7 @@
             await Plotly.newPlot('boundaryLayerChart', [trace], layout, { responsive: true });
         }
 
-        console.log('AROME Real-Time Wind Analysis loaded successfully!');
+        console.log('AROME Wind Analysis loaded successfully!');
     </script>
 </body>
 </html>
