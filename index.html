@@ -445,7 +445,7 @@
             </div>
 
             <div class="chart-container">
-                <div class="chart-title">Skew-T Log-P Diagram (Surface to 850hPa)</div>
+                <div class="chart-title">Skew-T Log-P Diagram (Surface to 500hPa)</div>
                 <div class="time-selector">
                     <label for="sounding-time-select">Select Time:</label>
                     <select id="sounding-time-select" onchange="updateSkewT()">
@@ -523,7 +523,14 @@
             { level: 925, param: 'temperature_925hPa', rh_param: 'relative_humidity_925hPa', wind_param: 'windspeed_925hPa', dir_param: 'winddirection_925hPa' },
             { level: 900, param: 'temperature_900hPa', rh_param: 'relative_humidity_900hPa', wind_param: 'windspeed_900hPa', dir_param: 'winddirection_900hPa' },
             { level: 875, param: 'temperature_875hPa', rh_param: 'relative_humidity_875hPa', wind_param: 'windspeed_875hPa', dir_param: 'winddirection_875hPa' },
-            { level: 850, param: 'temperature_850hPa', rh_param: 'relative_humidity_850hPa', wind_param: 'windspeed_850hPa', dir_param: 'winddirection_850hPa' }
+            { level: 850, param: 'temperature_850hPa', rh_param: 'relative_humidity_850hPa', wind_param: 'windspeed_850hPa', dir_param: 'winddirection_850hPa' },
+            { level: 800, param: 'temperature_800hPa', rh_param: 'relative_humidity_800hPa', wind_param: 'windspeed_800hPa', dir_param: 'winddirection_800hPa' },
+            { level: 750, param: 'temperature_750hPa', rh_param: 'relative_humidity_750hPa', wind_param: 'windspeed_750hPa', dir_param: 'winddirection_750hPa' },
+            { level: 700, param: 'temperature_700hPa', rh_param: 'relative_humidity_700hPa', wind_param: 'windspeed_700hPa', dir_param: 'winddirection_700hPa' },
+            { level: 650, param: 'temperature_650hPa', rh_param: 'relative_humidity_650hPa', wind_param: 'windspeed_650hPa', dir_param: 'winddirection_650hPa' },
+            { level: 600, param: 'temperature_600hPa', rh_param: 'relative_humidity_600hPa', wind_param: 'windspeed_600hPa', dir_param: 'winddirection_600hPa' },
+            { level: 550, param: 'temperature_550hPa', rh_param: 'relative_humidity_550hPa', wind_param: 'windspeed_550hPa', dir_param: 'winddirection_550hPa' },
+            { level: 500, param: 'temperature_500hPa', rh_param: 'relative_humidity_500hPa', wind_param: 'windspeed_500hPa', dir_param: 'winddirection_500hPa' }
         ];
 
         function showLoading() {
@@ -692,7 +699,14 @@
                 'temperature_925hPa', 'relative_humidity_925hPa',
                 'temperature_900hPa', 'relative_humidity_900hPa',
                 'temperature_875hPa', 'relative_humidity_875hPa',
-                'temperature_850hPa', 'relative_humidity_850hPa'
+                'temperature_850hPa', 'relative_humidity_850hPa',
+                'temperature_800hPa', 'relative_humidity_800hPa',
+                'temperature_750hPa', 'relative_humidity_750hPa',
+                'temperature_700hPa', 'relative_humidity_700hPa',
+                'temperature_650hPa', 'relative_humidity_650hPa',
+                'temperature_600hPa', 'relative_humidity_600hPa',
+                'temperature_550hPa', 'relative_humidity_550hPa',
+                'temperature_500hPa', 'relative_humidity_500hPa'
             ];
 
             const allParams = [...windParams, ...pressureParams];
@@ -743,7 +757,7 @@
             });
 
             // Add synthetic pressure level wind data based on tower measurements
-            const pressureLevels = [1000, 975, 950, 925, 900, 875, 850];
+            const pressureLevels = [1000, 975, 950, 925, 900, 875, 850, 800, 750, 700, 650, 600, 550, 500];
             pressureLevels.forEach(level => {
                 const altitude = pressureToAltitude(level);
                 
@@ -1295,7 +1309,7 @@
 
         async function createSkewTChart() {
             const selectedTime = new Date(windData.hourly.time[selectedTimeIndex]);
-            const majorPressures = [1000, 975, 950, 925, 900, 875, 850];
+            const majorPressures = [1000, 975, 950, 925, 900, 875, 850, 800, 750, 700, 650, 600, 550, 500];
             
             const soundingData = [];
             const windData_sounding = [];
@@ -1343,10 +1357,10 @@
 
             const traces = [];
 
-            // Grid lines
-            for (let temp = -30; temp <= 40; temp += 10) {
+            // Grid lines (temperature isotherms)
+            for (let temp = -60; temp <= 40; temp += 10) {
                 const lineCoords = [];
-                for (let p = 1000; p >= 850; p -= 25) {
+                for (let p = 1000; p >= 500; p -= 25) {
                     const coords = skewTransform(temp, p);
                     lineCoords.push({ x: coords.x, y: coords.y });
                 }
@@ -1362,25 +1376,61 @@
                 });
             }
 
-            // Dry adiabats
-            for (let theta = -20; theta <= 50; theta += 10) {
+            // Dry adiabatic lapse rate lines (potential temperature lines) - GREEN
+            for (let theta = -40; theta <= 60; theta += 10) {
                 const adiabatCoords = [];
-                for (let p = 1000; p >= 850; p -= 25) {
+                for (let p = 1000; p >= 500; p -= 10) {
                     const temp = calculateDryAdiabat(theta, p);
-                    const coords = skewTransform(temp, p);
-                    adiabatCoords.push({ x: coords.x, y: coords.y });
+                    if (temp >= -60 && temp <= 50) { // Only draw within reasonable temperature range
+                        const coords = skewTransform(temp, p);
+                        adiabatCoords.push({ x: coords.x, y: coords.y });
+                    }
                 }
                 
-                traces.push({
-                    x: adiabatCoords.map(c => c.x),
-                    y: adiabatCoords.map(c => c.y),
-                    type: 'scatter',
-                    mode: 'lines',
-                    line: { color: 'rgba(255, 140, 0, 0.4)', width: 1, dash: 'dash' },
-                    showlegend: false,
-                    hoverinfo: 'skip'
-                });
+                if (adiabatCoords.length > 0) {
+                    traces.push({
+                        x: adiabatCoords.map(c => c.x),
+                        y: adiabatCoords.map(c => c.y),
+                        type: 'scatter',
+                        mode: 'lines',
+                        line: { color: 'rgba(39, 174, 96, 0.6)', width: 1.5, dash: 'dash' },
+                        showlegend: false,
+                        hoverinfo: 'skip',
+                        name: `Dry Adiabat ${theta}°C`
+                    });
+                }
             }
+
+            // Parcel lapse rate lines (mixing ratio lines) - GREEN
+            const mixingRatios = [0.1, 0.2, 0.4, 1, 2, 4, 7, 10, 16, 24]; // g/kg
+            mixingRatios.forEach(w => {
+                const saturationCoords = [];
+                for (let p = 1000; p >= 500; p -= 10) {
+                    // Calculate saturation temperature for given mixing ratio and pressure
+                    // Using Magnus formula approximation
+                    const e = (w * p) / (621.97 + w); // vapor pressure in hPa
+                    if (e > 0 && e < p) {
+                        const temp = (243.04 * Math.log(e / 6.112)) / (17.625 - Math.log(e / 6.112));
+                        if (temp >= -60 && temp <= 50) {
+                            const coords = skewTransform(temp, p);
+                            saturationCoords.push({ x: coords.x, y: coords.y });
+                        }
+                    }
+                }
+                
+                if (saturationCoords.length > 0) {
+                    traces.push({
+                        x: saturationCoords.map(c => c.x),
+                        y: saturationCoords.map(c => c.y),
+                        type: 'scatter',
+                        mode: 'lines',
+                        line: { color: 'rgba(46, 204, 113, 0.4)', width: 1, dash: 'dot' },
+                        showlegend: false,
+                        hoverinfo: 'skip',
+                        name: `${w} g/kg mixing ratio`
+                    });
+                }
+            });
 
             // Temperature profile
             traces.push({
@@ -1432,20 +1482,34 @@
                 title: `AROME Model Skew-T Diagram - ${selectedTime.toLocaleString('en-GB', { timeZone: 'UTC' })} UTC`,
                 xaxis: { 
                     title: 'Temperature (°C)',
-                    range: [-25, 35]
+                    range: [-40, 40]
                 },
                 yaxis: { 
                     title: 'Pressure (hPa)',
                     type: 'log',
                     autorange: 'reversed',
-                    range: [Math.log(1000), Math.log(850)],
+                    range: [Math.log(1000), Math.log(500)],
                     tickmode: 'array',
                     tickvals: majorPressures.map(p => Math.log(p)),
                     ticktext: majorPressures.map(p => `${p}`)
                 },
                 showlegend: true,
                 legend: { x: 0.02, y: 0.98 },
-                margin: { t: 60, b: 80, l: 80, r: 150 }
+                margin: { t: 60, b: 80, l: 80, r: 150 },
+                annotations: [{
+                    text: 'Green dashed: Dry adiabats (potential temperature)<br>Green dotted: Mixing ratio lines',
+                    showarrow: false,
+                    x: 0.98,
+                    y: 0.02,
+                    xref: 'paper',
+                    yref: 'paper',
+                    xanchor: 'right',
+                    yanchor: 'bottom',
+                    font: { size: 9, color: '#27ae60' },
+                    bgcolor: 'rgba(255, 255, 255, 0.9)',
+                    bordercolor: '#27ae60',
+                    borderwidth: 1
+                }]
             };
 
             await Plotly.newPlot('skewTChart', traces, layout, { responsive: true });
