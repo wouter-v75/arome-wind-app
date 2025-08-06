@@ -311,6 +311,92 @@
             margin-bottom: 20px;
         }
 
+        .convective-params {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .param-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .param-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            border-left: 5px solid #3498db;
+            transition: all 0.3s ease;
+        }
+
+        .param-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .param-item.cape {
+            border-left-color: #e74c3c;
+        }
+
+        .param-item.cin {
+            border-left-color: #f39c12;
+        }
+
+        .param-item.li {
+            border-left-color: #9b59b6;
+        }
+
+        .param-label {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .param-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #2c3e50;
+            margin-bottom: 5px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .param-unit {
+            font-size: 1rem;
+            color: #7f8c8d;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .param-description {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+
+        .convective-interpretation {
+            background: rgba(52, 152, 219, 0.1);
+            border-radius: 8px;
+            padding: 20px;
+            border-left: 4px solid #3498db;
+        }
+
+        .convective-interpretation h4 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        #convective-analysis {
+            color: #2c3e50;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 2rem;
@@ -458,6 +544,36 @@
             </div>
 
             <div class="chart-container">
+                <div class="chart-title">⚡ GFS Convective Parameters</div>
+                <div class="convective-params" id="convective-params">
+                    <div class="param-grid">
+                        <div class="param-item cape">
+                            <div class="param-label">CAPE</div>
+                            <div class="param-value" id="cape-value">--</div>
+                            <div class="param-unit">J/kg</div>
+                            <div class="param-description">Convective Available Potential Energy</div>
+                        </div>
+                        <div class="param-item cin">
+                            <div class="param-label">CIN</div>
+                            <div class="param-value" id="cin-value">--</div>
+                            <div class="param-unit">J/kg</div>
+                            <div class="param-description">Convective Inhibition</div>
+                        </div>
+                        <div class="param-item li">
+                            <div class="param-label">LI</div>
+                            <div class="param-value" id="li-value">--</div>
+                            <div class="param-unit">°C</div>
+                            <div class="param-description">Lifted Index (500hPa)</div>
+                        </div>
+                    </div>
+                    <div class="convective-interpretation" id="convective-interpretation">
+                        <h4>Convective Outlook</h4>
+                        <div id="convective-analysis">Select a time to see convective analysis</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container">
                 <div class="chart-title">🌪️ Comprehensive Wind Profile Analysis</div>
                 <div class="time-selector">
                     <label for="time-select">Select Time for Wind Profiles:</label>
@@ -489,6 +605,7 @@
     <script>
         let windData = null;
         let boundaryLayerData = null;
+        let convectiveData = null;
         let selectedLevels = new Set();
         let selectedTimeIndex = 12;
 
@@ -669,6 +786,14 @@
                 } catch (gfsError) {
                     debugLog('GFS boundary layer fetch failed, continuing without it:', gfsError.message);
                     // boundaryLayerData will be created synthetically in the GFS function
+                }
+                
+                // Fetch GFS convective parameters (CAPE, CIN, Lifted Index)
+                try {
+                    await fetchGfsConvectiveData(latitude, longitude, startDate);
+                } catch (convectiveError) {
+                    debugLog('GFS convective data fetch failed, continuing without it:', convectiveError.message);
+                    convectiveData = null;
                 }
                 
                 await processAndDisplayData();
@@ -863,6 +988,47 @@
             debugLog('GFS boundary layer data fetched successfully', boundaryLayerData);
         }
 
+        async function fetchGfsConvectiveData(latitude, longitude, startDate) {
+            debugLog('Fetching GFS convective parameters...');
+            
+            // Calculate end date as 36 hours (1.5 days) from start date
+            const startDateTime = new Date(startDate + 'T00:00:00Z');
+            const endDateTime = new Date(startDateTime.getTime() + (36 * 60 * 60 * 1000)); // Add 36 hours
+            const endDate = endDateTime.toISOString().split('T')[0];
+
+            const url = `https://api.open-meteo.com/v1/gfs?` +
+                `latitude=${latitude}&longitude=${longitude}` +
+                `&start_date=${startDate}&end_date=${endDate}` +
+                `&hourly=cape,convective_inhibition,lifted_index&timezone=UTC`;
+
+            debugLog('GFS Convective API URL:', url);
+
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                debugLog('GFS Convective API Error Response:', errorText);
+                throw new Error(`GFS Convective API Error: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            
+            if (!data.hourly || !data.hourly.time) {
+                throw new Error('Invalid GFS Convective API response format');
+            }
+
+            convectiveData = {
+                latitude: data.latitude,
+                longitude: data.longitude,
+                elevation: data.elevation || 0,
+                hourly: data.hourly,
+                generationtime_ms: data.generationtime_ms,
+                utc_offset_seconds: data.utc_offset_seconds
+            };
+
+            debugLog('GFS convective data fetched successfully', convectiveData);
+        }
+
         async function processAndDisplayData() {
             document.getElementById('location-info').textContent = 
                 `${decimalToDMS(windData.latitude, false)}, ${decimalToDMS(windData.longitude, true)}`;
@@ -882,6 +1048,7 @@
             
             createWindSpeedChart();
             createSkewTChart();
+            updateConvectiveParams();
             createWindProfiles();
             createBoundaryLayerChart();
         }
@@ -1012,6 +1179,7 @@
         function updateWindProfiles() {
             selectedTimeIndex = parseInt(document.getElementById('time-select').value);
             document.getElementById('sounding-time-select').value = selectedTimeIndex;
+            updateConvectiveParams();
             createWindProfiles();
             createSkewTChart();
         }
@@ -1020,7 +1188,109 @@
             selectedTimeIndex = parseInt(document.getElementById('sounding-time-select').value);
             document.getElementById('time-select').value = selectedTimeIndex;
             createSkewTChart();
+            updateConvectiveParams();
             createWindProfiles();
+        }
+
+        function updateConvectiveParams() {
+            if (!convectiveData || !convectiveData.hourly) {
+                document.getElementById('cape-value').textContent = 'N/A';
+                document.getElementById('cin-value').textContent = 'N/A';
+                document.getElementById('li-value').textContent = 'N/A';
+                document.getElementById('convective-analysis').textContent = 'GFS convective data not available';
+                return;
+            }
+
+            const cape = convectiveData.hourly.cape?.[selectedTimeIndex];
+            const cin = convectiveData.hourly.convective_inhibition?.[selectedTimeIndex];
+            const li = convectiveData.hourly.lifted_index?.[selectedTimeIndex];
+
+            // Update display values
+            document.getElementById('cape-value').textContent = cape !== null && cape !== undefined ? Math.round(cape) : '--';
+            document.getElementById('cin-value').textContent = cin !== null && cin !== undefined ? Math.round(Math.abs(cin)) : '--';
+            document.getElementById('li-value').textContent = li !== null && li !== undefined ? li.toFixed(1) : '--';
+
+            // Generate meteorological interpretation
+            const analysis = generateConvectiveAnalysis(cape, cin, li);
+            document.getElementById('convective-analysis').innerHTML = analysis;
+        }
+
+        function generateConvectiveAnalysis(cape, cin, li) {
+            let analysis = '';
+            let convectivePotential = 'Unknown';
+            let stormType = '';
+            let warnings = [];
+
+            // Analyze CAPE
+            if (cape !== null && cape !== undefined) {
+                if (cape < 500) {
+                    convectivePotential = 'Very Low';
+                    analysis += `<strong>CAPE:</strong> Very low convective energy (${Math.round(cape)} J/kg). Minimal thunderstorm potential. `;
+                } else if (cape < 1000) {
+                    convectivePotential = 'Low';
+                    analysis += `<strong>CAPE:</strong> Low convective energy (${Math.round(cape)} J/kg). Weak thunderstorms possible. `;
+                } else if (cape < 2000) {
+                    convectivePotential = 'Moderate';
+                    analysis += `<strong>CAPE:</strong> Moderate convective energy (${Math.round(cape)} J/kg). Moderate thunderstorms likely. `;
+                    stormType = 'moderate thunderstorms';
+                } else if (cape < 3500) {
+                    convectivePotential = 'High';
+                    analysis += `<strong>CAPE:</strong> High convective energy (${Math.round(cape)} J/kg). Strong thunderstorms likely. `;
+                    stormType = 'strong thunderstorms';
+                    warnings.push('Strong storm potential');
+                } else {
+                    convectivePotential = 'Extreme';
+                    analysis += `<strong>CAPE:</strong> Extreme convective energy (${Math.round(cape)} J/kg). Severe thunderstorms with supercell potential. `;
+                    stormType = 'severe thunderstorms/supercells';
+                    warnings.push('SEVERE weather potential');
+                }
+            }
+
+            // Analyze CIN
+            if (cin !== null && cin !== undefined) {
+                const cinAbs = Math.abs(cin);
+                if (cinAbs < 25) {
+                    analysis += `<strong>CIN:</strong> Very low inhibition (${Math.round(cinAbs)} J/kg). Easy storm initiation. `;
+                    warnings.push('Easy convective triggering');
+                } else if (cinAbs < 75) {
+                    analysis += `<strong>CIN:</strong> Low inhibition (${Math.round(cinAbs)} J/kg). Moderate storm initiation barrier. `;
+                } else if (cinAbs < 150) {
+                    analysis += `<strong>CIN:</strong> Moderate inhibition (${Math.round(cinAbs)} J/kg). Significant capping layer present. `;
+                } else {
+                    analysis += `<strong>CIN:</strong> Strong inhibition (${Math.round(cinAbs)} J/kg). Strong capping layer suppressing convection. `;
+                    warnings.push('Strong convective suppression');
+                }
+            }
+
+            // Analyze Lifted Index
+            if (li !== null && li !== undefined) {
+                if (li < -6) {
+                    analysis += `<strong>LI:</strong> Extremely unstable (${li.toFixed(1)}°C). Severe thunderstorm environment. `;
+                    warnings.push('EXTREME instability');
+                } else if (li < -4) {
+                    analysis += `<strong>LI:</strong> Very unstable (${li.toFixed(1)}°C). Strong thunderstorm potential. `;
+                } else if (li < -2) {
+                    analysis += `<strong>LI:</strong> Unstable (${li.toFixed(1)}°C). Thunderstorm development likely. `;
+                } else if (li < 0) {
+                    analysis += `<strong>LI:</strong> Slightly unstable (${li.toFixed(1)}°C). Weak thunderstorm potential. `;
+                } else {
+                    analysis += `<strong>LI:</strong> Stable atmosphere (${li.toFixed(1)}°C). Thunderstorm development unlikely. `;
+                }
+            }
+
+            // Summary
+            analysis += `<br><br><strong>Summary:</strong> ${convectivePotential} convective potential`;
+            if (stormType) {
+                analysis += ` with ${stormType} possible`;
+            }
+            analysis += '.';
+
+            // Warnings
+            if (warnings.length > 0) {
+                analysis += `<br><br><strong style="color: #e74c3c;">⚠️ Alerts:</strong> ${warnings.join(', ')}`;
+            }
+
+            return analysis;
         }
 
         async function createWindProfiles() {
