@@ -1357,10 +1357,10 @@
 
             const traces = [];
 
-            // Grid lines (temperature isotherms)
+            // Grid lines (temperature isotherms) - straight diagonal lines in skewed coordinates
             for (let temp = -60; temp <= 40; temp += 10) {
                 const lineCoords = [];
-                for (let p = 1000; p >= 500; p -= 25) {
+                for (let p = 1000; p >= 500; p -= 10) {
                     const coords = skewTransform(temp, p);
                     lineCoords.push({ x: coords.x, y: coords.y });
                 }
@@ -1370,11 +1370,33 @@
                     y: lineCoords.map(c => c.y),
                     type: 'scatter',
                     mode: 'lines',
-                    line: { color: 'rgba(200, 200, 200, 0.3)', width: 1 },
+                    line: { color: 'rgba(150, 150, 150, 0.4)', width: 1 },
                     showlegend: false,
-                    hoverinfo: 'skip'
+                    hoverinfo: 'skip',
+                    name: `${temp}°C isotherm`
                 });
             }
+
+            // Pressure isobars (horizontal lines)
+            const pressureIsobars = [1000, 950, 900, 850, 800, 750, 700, 650, 600, 550, 500];
+            pressureIsobars.forEach(pressure => {
+                const lineCoords = [];
+                for (let temp = -60; temp <= 40; temp += 5) {
+                    const coords = skewTransform(temp, pressure);
+                    lineCoords.push({ x: coords.x, y: coords.y });
+                }
+                
+                traces.push({
+                    x: lineCoords.map(c => c.x),
+                    y: lineCoords.map(c => c.y),
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: { color: 'rgba(150, 150, 150, 0.3)', width: 1 },
+                    showlegend: false,
+                    hoverinfo: 'skip',
+                    name: `${pressure}hPa isobar`
+                });
+            });
 
             // Dry adiabatic lapse rate lines (potential temperature lines) - GREEN
             for (let theta = -40; theta <= 60; theta += 10) {
