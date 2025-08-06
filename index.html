@@ -1046,7 +1046,7 @@
             // Calculate theoretical logarithmic wind profile
             const refPoint = profileData.find(d => d.altitude === 10) || profileData[0];
             const vonKarmanConstant = 0.4;
-            const roughnessLength = 0.1; // meters (open terrain)
+            const roughnessLength = 0.001; // meters (water surface - typical ocean value)
             
             // Calculate friction velocity: u* = (k * u_ref) / ln(z_ref / z0)
             const refSpeedMs = refPoint.speed * 0.514444; // Convert knots to m/s
@@ -1111,11 +1111,11 @@
                     name: 'Theoretical Log Law',
                     line: { color: '#34495e', width: 3, dash: 'dot' },
                     text: theoretical.map(d => 
-                        `<b>Theoretical Profile</b><br>` +
+                        `<b>Theoretical Profile (Water Surface)</b><br>` +
                         `Altitude: ${d.altitude} m<br>` +
                         `Speed: ${d.speed.toFixed(1)} knots<br>` +
                         `u* = ${d.frictionVelocity.toFixed(3)} m/s<br>` +
-                        `z0 = ${d.roughnessLength} m<br>` +
+                        `z0 = ${d.roughnessLength.toFixed(4)} m<br>` +
                         `Log wind law formula`
                     ),
                     hovertemplate: '%{text}<extra></extra>'
@@ -1141,7 +1141,7 @@
                 margin: { t: 60, b: 40, l: 70, r: 20 },
                 plot_bgcolor: 'rgba(248, 249, 250, 0.8)',
                 annotations: [{
-                    text: `Red: AROME model forecast<br>Gray dotted: Theoretical log law<br>u* = ${theoretical.length > 0 ? theoretical[0].frictionVelocity.toFixed(3) : 'N/A'} m/s`,
+                    text: `Red: AROME model forecast<br>Gray dotted: Theoretical log law (water surface)<br>u* = ${theoretical.length > 0 ? theoretical[0].frictionVelocity.toFixed(3) : 'N/A'} m/s, z0 = 0.001m`,
                     showarrow: false,
                     x: 0.98,
                     y: 0.02,
@@ -1190,7 +1190,7 @@
             // Calculate theoretical profile for linear scale
             const refPoint = profileData.find(d => d.altitude === 10) || profileData[0];
             const vonKarmanConstant = 0.4;
-            const roughnessLength = 0.1;
+            const roughnessLength = 0.001; // meters (water surface)
             
             const refSpeedMs = refPoint.speed * 0.514444;
             const frictionVelocity = (vonKarmanConstant * refSpeedMs) / Math.log(refPoint.altitude / roughnessLength);
@@ -1249,10 +1249,10 @@
                     name: 'Theoretical Log Law',
                     line: { color: '#7f8c8d', width: 3, dash: 'dot' },
                     text: theoretical.map(d => 
-                        `<b>Theoretical Profile</b><br>` +
+                        `<b>Theoretical Profile (Water Surface)</b><br>` +
                         `Altitude: ${d.altitude} m<br>` +
                         `Speed: ${d.speed.toFixed(1)} knots<br>` +
-                        `Based on logarithmic wind law`
+                        `Based on logarithmic wind law over water`
                     ),
                     hovertemplate: '%{text}<extra></extra>'
                 });
@@ -1275,7 +1275,7 @@
                 margin: { t: 60, b: 40, l: 60, r: 20 },
                 plot_bgcolor: 'rgba(248, 249, 250, 0.8)',
                 annotations: [{
-                    text: `Blue: AROME model forecast<br>Gray dotted: Theoretical log law<br>Linear altitude scale`,
+                    text: `Blue: AROME model forecast<br>Gray dotted: Theoretical log law (water surface)<br>z0 = 0.001m, Linear altitude scale`,
                     showarrow: false,
                     x: 0.98,
                     y: 0.02,
