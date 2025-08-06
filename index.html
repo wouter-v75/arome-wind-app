@@ -630,7 +630,14 @@
             { level: '925hPa', param: 'windspeed_925hPa', dir_param: 'winddirection_925hPa', altitude: 800, color: '#8e44ad' },
             { level: '900hPa', param: 'windspeed_900hPa', dir_param: 'winddirection_900hPa', altitude: 1000, color: '#95a5a6' },
             { level: '875hPa', param: 'windspeed_875hPa', dir_param: 'winddirection_875hPa', altitude: 1200, color: '#16a085' },
-            { level: '850hPa', param: 'windspeed_850hPa', dir_param: 'winddirection_850hPa', altitude: 1500, color: '#d35400' }
+            { level: '850hPa', param: 'windspeed_850hPa', dir_param: 'winddirection_850hPa', altitude: 1500, color: '#d35400' },
+            { level: '800hPa', param: 'windspeed_800hPa', dir_param: 'winddirection_800hPa', altitude: 1900, color: '#c0392b' },
+            { level: '750hPa', param: 'windspeed_750hPa', dir_param: 'winddirection_750hPa', altitude: 2500, color: '#8e44ad' },
+            { level: '700hPa', param: 'windspeed_700hPa', dir_param: 'winddirection_700hPa', altitude: 3000, color: '#2c3e50' },
+            { level: '650hPa', param: 'windspeed_650hPa', dir_param: 'winddirection_650hPa', altitude: 3600, color: '#7f8c8d' },
+            { level: '600hPa', param: 'windspeed_600hPa', dir_param: 'winddirection_600hPa', altitude: 4200, color: '#e74c3c' },
+            { level: '550hPa', param: 'windspeed_550hPa', dir_param: 'winddirection_550hPa', altitude: 4900, color: '#f39c12' },
+            { level: '500hPa', param: 'windspeed_500hPa', dir_param: 'winddirection_500hPa', altitude: 5600, color: '#27ae60' }
         ];
 
         const soundingLevels = [
@@ -805,9 +812,156 @@
         }
 
         async function fetchAromeWindData(latitude, longitude, startDate) {
-            debugLog('Fetching AROME model forecast data...');
+            debugLog('Fetching AROME France HD model forecast data...');
             
-            // Use the correct Météo-France AROME API endpoint
+            // Use the correct Météo-France AROME HD API endpoint with model selection
+            // AROME HD has higher resolution but limited wind levels (only up to 100m)
+            const windParamsHD = [
+                'wind_speed_10m', 'wind_direction_10m',
+                'wind_speed_20m', 'wind_direction_20m',
+                'wind_speed_50m', 'wind_direction_50m',
+                'wind_speed_100m', 'wind_direction_100m'
+                // Note: wind_speed_150m and wind_speed_200m are NOT available in AROME HD
+            ];
+
+            const pressureParams = [
+                'temperature_1000hPa', 'relative_humidity_1000hPa',
+                'temperature_975hPa', 'relative_humidity_975hPa', 
+                'temperature_950hPa', 'relative_humidity_950hPa',
+                'temperature_925hPa', 'relative_humidity_925hPa',
+                'temperature_900hPa', 'relative_humidity_900hPa',
+                'temperature_875hPa', 'relative_humidity_875hPa',
+                'temperature_850hPa', 'relative_humidity_850hPa',
+                'temperature_800hPa', 'relative_humidity_800hPa',
+                'temperature_750hPa', 'relative_humidity_750hPa',
+                'temperature_700hPa', 'relative_humidity_700hPa',
+                'temperature_650hPa', 'relative_humidity_650hPa',
+                'temperature_600hPa', 'relative_humidity_600hPa',
+                'temperature_550hPa', 'relative_humidity_550hPa',
+                'temperature_500hPa', 'relative_humidity_500hPa'
+            ];
+
+            const allParamsHD = [...windParamsHD, ...pressureParams];
+            
+            // AROME model provides 4-day forecast (168 hours)
+            // For 36-hour limit, we'll use the start date and request specific hours
+            const url = `https://api.open-meteo.com/v1/meteofrance?` +
+                `latitude=${latitude}&longitude=${longitude}` +
+                `&hourly=${allParamsHD.join(',')}` +
+                `&wind_speed_unit=kmh&timezone=UTC&forecast_days=2` +
+                `&models=meteofrance_arome_france_hd`;
+
+            debugLog('AROME HD API URL:', url);
+
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                debugLog('AROME HD API Error Response:', errorText);
+                
+                // Fallback to regular AROME if HD fails
+                debugLog('AROME HD failed, falling back to regular AROME...');
+                return await fetchAromeWindDataFallback(latitude, longitude, startDate);
+            }
+
+            const data = await response.json();
+            
+            if (!data.hourly || !data.hourly.time) {
+                debugLog('Invalid AROME HD response, falling back to regular AROME...');
+                return await fetchAromeWindDataFallback(latitude, longitude, startDate);
+            }
+
+            // Limit to 36 hours from start date
+            const startDateTime = new Date(startDate + 'T00:00:00Z');
+            const endDateTime = new Date(startDateTime.getTime() + (36 * 60 * 60 * 1000));
+            
+            const filteredIndices = [];
+            data.hourly.time.forEach((timeStr, index) => {
+                const timeDate = new Date(timeStr);
+                if (timeDate >= startDateTime && timeDate <= endDateTime) {
+                    filteredIndices.push(index);
+                }
+            });
+
+            // Filter all hourly data to 36-hour window
+            const filtered_hourly = {};
+            Object.keys(data.hourly).forEach(param => {
+                if (Array.isArray(data.hourly[param])) {
+                    filtered_hourly[param] = filteredIndices.map(i => data.hourly[param][i]);
+                } else {
+                    filtered_hourly[param] = data.hourly[param];
+                }
+            });
+
+            // Add synthetic higher level wind data and pressure level wind data based on available measurements
+            const pressureLevels = [1000, 975, 950, 925, 900, 875, 850, 800, 750, 700, 650, 600, 550, 500];
+            
+            // Add synthetic 150m and 200m wind speeds (not available in AROME HD)
+            const refWindSpeed = filtered_hourly.wind_speed_100m;
+            const refWindDir = filtered_hourly.wind_direction_100m;
+            const refAltitude = 100; // meters
+            
+            if (refWindSpeed && refWindDir) {
+                // Extrapolate to 150m and 200m using power law
+                [150, 200].forEach(altitude => {
+                    const factor = Math.pow(altitude / refAltitude, 0.143); // standard power law exponent
+                    filtered_hourly[`wind_speed_${altitude}m`] = refWindSpeed.map(speed => {
+                        return speed !== null ? speed * factor : null;
+                    });
+                    
+                    // Wind direction backing with height (Ekman spiral effect)
+                    const backingAngle = (altitude - refAltitude) / 100 * 2; // 2° per 100m
+                    filtered_hourly[`wind_direction_${altitude}m`] = refWindDir.map(dir => {
+                        return dir !== null ? (dir - backingAngle + 360) % 360 : null;
+                    });
+                });
+            }
+
+            // Add pressure level wind data
+            pressureLevels.forEach(level => {
+                const altitude = pressureToAltitude(level);
+                
+                // Use 100m wind as reference for extrapolation to pressure levels (since HD only goes to 100m)
+                const refWindSpeed = filtered_hourly.wind_speed_100m;
+                const refWindDir = filtered_hourly.wind_direction_100m;
+                const refAltitude = 100; // meters
+                
+                if (refWindSpeed && refWindDir) {
+                    // Power law wind extrapolation
+                    filtered_hourly[`windspeed_${level}hPa`] = refWindSpeed.map(speed => {
+                        if (speed === null) return null;
+                        const factor = Math.pow(altitude / refAltitude, 0.143);
+                        return speed * factor;
+                    });
+                    
+                    // Wind direction backing with height (Ekman spiral effect)
+                    filtered_hourly[`winddirection_${level}hPa`] = refWindDir.map(dir => {
+                        if (dir === null) return null;
+                        const backingAngle = (altitude - refAltitude) / 100 * 2; // 2° per 100m
+                        return (dir - backingAngle + 360) % 360;
+                    });
+                }
+            });
+
+            windData = {
+                latitude: data.latitude,
+                longitude: data.longitude,
+                elevation: data.elevation || 0,
+                hourly: filtered_hourly,
+                generationtime_ms: data.generationtime_ms,
+                utc_offset_seconds: data.utc_offset_seconds,
+                model: 'AROME HD',
+                resolution: '~0.01°',
+                forecast_hours: filtered_hourly.time ? filtered_hourly.time.length : 0
+            };
+
+            debugLog('AROME HD forecast data fetched successfully', windData);
+        }
+
+        async function fetchAromeWindDataFallback(latitude, longitude, startDate) {
+            debugLog('Fetching regular AROME model forecast data as fallback...');
+            
+            // Regular AROME API with full wind level support
             const windParams = [
                 'wind_speed_10m', 'wind_direction_10m',
                 'wind_speed_20m', 'wind_direction_20m',
@@ -836,20 +990,18 @@
 
             const allParams = [...windParams, ...pressureParams];
             
-            // AROME model provides 4-day forecast (168 hours)
-            // For 36-hour limit, we'll use the start date and request specific hours
             const url = `https://api.open-meteo.com/v1/meteofrance?` +
                 `latitude=${latitude}&longitude=${longitude}` +
                 `&hourly=${allParams.join(',')}` +
                 `&wind_speed_unit=kmh&timezone=UTC&forecast_days=2`;
 
-            debugLog('AROME API URL:', url);
+            debugLog('Regular AROME API URL:', url);
 
             const response = await fetch(url);
             
             if (!response.ok) {
                 const errorText = await response.text();
-                debugLog('AROME API Error Response:', errorText);
+                debugLog('Regular AROME API Error Response:', errorText);
                 throw new Error(`AROME API Error: ${response.status} ${response.statusText}`);
             }
 
@@ -859,7 +1011,7 @@
                 throw new Error('Invalid AROME API response format');
             }
 
-            // Limit to 36 hours from start date
+            // Limit to 36 hours from start date and add pressure level wind data
             const startDateTime = new Date(startDate + 'T00:00:00Z');
             const endDateTime = new Date(startDateTime.getTime() + (36 * 60 * 60 * 1000));
             
@@ -871,7 +1023,6 @@
                 }
             });
 
-            // Filter all hourly data to 36-hour window
             const filtered_hourly = {};
             Object.keys(data.hourly).forEach(param => {
                 if (Array.isArray(data.hourly[param])) {
@@ -881,29 +1032,25 @@
                 }
             });
 
-            // Add synthetic pressure level wind data based on tower measurements
+            // Add pressure level wind data using 200m as reference
             const pressureLevels = [1000, 975, 950, 925, 900, 875, 850, 800, 750, 700, 650, 600, 550, 500];
             pressureLevels.forEach(level => {
                 const altitude = pressureToAltitude(level);
                 
-                // Use 200m wind as reference for extrapolation to pressure levels
                 const refWindSpeed = filtered_hourly.wind_speed_200m || filtered_hourly.wind_speed_150m || filtered_hourly.wind_speed_100m;
                 const refWindDir = filtered_hourly.wind_direction_200m || filtered_hourly.wind_direction_150m || filtered_hourly.wind_direction_100m;
-                const refAltitude = 200; // meters
+                const refAltitude = 200;
                 
                 if (refWindSpeed && refWindDir) {
-                    // Power law wind extrapolation
                     filtered_hourly[`windspeed_${level}hPa`] = refWindSpeed.map(speed => {
                         if (speed === null) return null;
-                        const factor = Math.pow(altitude / refAltitude, 0.143); // standard power law exponent
+                        const factor = Math.pow(altitude / refAltitude, 0.143);
                         return speed * factor;
                     });
                     
-                    // Wind direction backing with height (Ekman spiral effect)
                     filtered_hourly[`winddirection_${level}hPa`] = refWindDir.map(dir => {
                         if (dir === null) return null;
-                        // Add backing effect: wind backs (turns counter-clockwise) with height
-                        const backingAngle = (altitude - refAltitude) / 100 * 2; // 2° per 100m
+                        const backingAngle = (altitude - refAltitude) / 100 * 2;
                         return (dir - backingAngle + 360) % 360;
                     });
                 }
@@ -916,12 +1063,12 @@
                 hourly: filtered_hourly,
                 generationtime_ms: data.generationtime_ms,
                 utc_offset_seconds: data.utc_offset_seconds,
-                model: 'AROME',
+                model: 'AROME (fallback)',
                 resolution: '1.5km',
                 forecast_hours: filtered_hourly.time ? filtered_hourly.time.length : 0
             };
 
-            debugLog('AROME forecast data fetched successfully', windData);
+            debugLog('Regular AROME forecast data fetched successfully', windData);
         }
 
         async function fetchGfsBoundaryLayerData(latitude, longitude, startDate) {
