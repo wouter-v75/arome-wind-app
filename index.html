@@ -667,6 +667,7 @@
             const latDMS = decimalToDMS(lat, false);
             const lonDMS = decimalToDMS(lon, true);
 
+            // Set the DMS values in the input fields
             document.getElementById(`lat-${locationNum}`).value = latDMS;
             document.getElementById(`lon-${locationNum}`).value = lonDMS;
 
@@ -677,10 +678,11 @@
 
             // Show clear button
             const clearBtn = document.querySelector(`#location-${locationNum}-card .clear-location-btn`);
-            clearBtn.classList.add('show');
+            if (clearBtn) clearBtn.classList.add('show');
 
             // Mark card as active
-            document.getElementById(`location-${locationNum}-card`).classList.add('active');
+            const card = document.getElementById(`location-${locationNum}-card`);
+            if (card) card.classList.add('active');
         }
 
         function clearLocation(locationNum) {
@@ -876,4 +878,136 @@
                             <div class="wind-stat-value">${kmhToKnots(maxWind).toFixed(1)} kt</div>
                         </div>
                         <div class="wind-stat">
-                            <div class="wind-stat-labe
+                            <div class="wind-stat-label">Min Wind</div>
+                            <div class="wind-stat-value">${kmhToKnots(minWind).toFixed(1)} kt</div>
+                        </div>
+                        <div class="wind-stat">
+                            <div class="wind-stat-label">Elevation</div>
+                            <div class="wind-stat-value">${Math.round(data.elevation || 0)} m</div>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(summaryEl);
+            });
+        }
+
+        function createWindComparisonChart() {
+            const traces = [];
+            const colors = {
+                1: '#e74c3c',
+                2: '#27ae60',
+                3: '#f39c12'
+            };
+
+            const locationNames = {
+                1: '🔴 Location 1',
+                2: '🟢 Location 2', 
+                3: '🟠 Location 3'
+            };
+
+            Object.entries(windData).forEach(([locationNum, data]) => {
+                const times = data.hourly.time.map(t => new Date(t));
+                const speeds10m = data.hourly.wind_speed_10m;
+                const speeds100m = data.hourly.wind_speed_100m;
+
+                if (speeds10m) {
+                    traces.push({
+                        x: times,
+                        y: speeds10m.map(s => s !== null ? kmhToKnots(s) : null),
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        name: `${locationNames[locationNum]} (10m)`,
+                        line: { color: colors[locationNum], width: 3 },
+                        marker: { size: 6 },
+                        connectgaps: true
+                    });
+                }
+
+                if (speeds100m) {
+                    traces.push({
+                        x: times,
+                        y: speeds100m.map(s => s !== null ? kmhToKnots(s) : null),
+                        type: 'scatter',
+                        mode: 'lines',
+                        name: `${locationNames[locationNum]} (100m)`,
+                        line: { color: colors[locationNum], width: 2, dash: 'dash' },
+                        connectgaps: true
+                    });
+                }
+            });
+
+            const layout = {
+                title: 'Wind Speed Comparison Over Time',
+                xaxis: { title: 'Time', type: 'date' },
+                yaxis: { title: 'Wind Speed (knots)', rangemode: 'tozero' },
+                hovermode: 'x unified',
+                legend: { orientation: 'h', y: -0.15 },
+                margin: { t: 40, b: 100 }
+            };
+
+            Plotly.newPlot('windComparisonChart', traces, layout, { responsive: true });
+        }
+
+        function createWindProfileChart() {
+            // Create vertical wind profiles for the first time point
+            const traces = [];
+            const colors = {
+                1: '#e74c3c',
+                2: '#27ae60',
+                3: '#f39c12'
+            };
+
+            const locationNames = {
+                1: '🔴 Location 1',
+                2: '🟢 Location 2',
+                3: '🟠 Location 3'
+            };
+
+            const altitudes = [10, 100, 150]; // Available levels
+
+            Object.entries(windData).forEach(([locationNum, data]) => {
+                const profileData = [];
+                
+                altitudes.forEach(alt => {
+                    const param = `wind_speed_${alt}m`;
+                    const speed = data.hourly[param]?.[0]; // First time point
+                    if (speed !== null && speed !== undefined) {
+                        profileData.push({
+                            altitude: alt,
+                            speed: kmhToKnots(speed)
+                        });
+                    }
+                });
+
+                if (profileData.length > 0) {
+                    traces.push({
+                        x: profileData.map(d => d.speed),
+                        y: profileData.map(d => d.altitude),
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        name: locationNames[locationNum],
+                        line: { color: colors[locationNum], width: 3 },
+                        marker: { size: 8, color: colors[locationNum] }
+                    });
+                }
+            });
+
+            const layout = {
+                title: 'Vertical Wind Profile Comparison (First Forecast Hour)',
+                xaxis: { title: 'Wind Speed (knots)', rangemode: 'tozero' },
+                yaxis: { title: 'Altitude (meters)', rangemode: 'tozero' },
+                hovermode: 'closest',
+                legend: { x: 0.7, y: 0.95 }
+            };
+
+            Plotly.newPlot('windProfileChart', traces, layout, { responsive: true });
+        }
+
+        // Initialize everything when page loads
+        window.onload = function() {
+            document.getElementById('date').valueAsDate = new Date();
+            initMap();
+        };
+    </script>
+</body>
+</html>
