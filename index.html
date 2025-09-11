@@ -424,17 +424,78 @@
             position: relative;
         }
 
-        /* Custom map marker colors */
-        .leaflet-marker-icon.location-1 {
-            filter: hue-rotate(0deg);
+        .location-table {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 5px solid #3498db;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
 
-        .leaflet-marker-icon.location-2 {
-            filter: hue-rotate(120deg);
+        .location-table.location-2 {
+            border-left-color: #27ae60;
         }
 
-        .leaflet-marker-icon.location-3 {
-            filter: hue-rotate(60deg);
+        .location-table.location-3 {
+            border-left-color: #f39c12;
+        }
+
+        .location-table.hidden {
+            display: none;
+        }
+
+        .table-header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .table-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .table-coords {
+            font-family: monospace;
+            color: #7f8c8d;
+        }
+
+        .wind-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .wind-table thead tr {
+            background: #34495e;
+            color: white;
+        }
+
+        .wind-table th {
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #2c3e50;
+        }
+
+        .wind-table td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+
+        .wind-table .time-cell {
+            font-family: monospace;
+            font-weight: bold;
+            background: #ecf0f1;
+        }
+
+        .wind-table .no-data {
+            color: #95a5a6;
         }
 
         @media (max-width: 768px) {
@@ -563,6 +624,104 @@
             <div id="error-message"></div>
         </div>
 
+        <!-- ALWAYS VISIBLE WIND TABLES -->
+        <div class="chart-container">
+            <div class="chart-title">🌊 Wind Tables (08:00 - 18:00)</div>
+            
+            <!-- Location 1 Table -->
+            <div class="location-table location-1" id="table-location-1">
+                <div class="table-header">
+                    <div class="table-title">🔴 Location 1</div>
+                    <div class="table-coords" id="coords-display-1">Click map to select location</div>
+                </div>
+                <table class="wind-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>TWD</th>
+                            <th>TWS ave</th>
+                            <th>TWS min&max</th>
+                        </tr>
+                    </thead>
+                    <tbody id="wind-tbody-1">
+                        <tr><td class="time-cell">08:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">09:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">10:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">11:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">12:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">13:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">14:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">15:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">16:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">17:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">18:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Location 2 Table -->
+            <div class="location-table location-2 hidden" id="table-location-2">
+                <div class="table-header">
+                    <div class="table-title">🟢 Location 2</div>
+                    <div class="table-coords" id="coords-display-2">Click map to select location</div>
+                </div>
+                <table class="wind-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>TWD</th>
+                            <th>TWS ave</th>
+                            <th>TWS min&max</th>
+                        </tr>
+                    </thead>
+                    <tbody id="wind-tbody-2">
+                        <tr><td class="time-cell">08:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">09:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">10:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">11:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">12:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">13:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">14:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">15:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">16:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">17:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">18:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Location 3 Table -->
+            <div class="location-table location-3 hidden" id="table-location-3">
+                <div class="table-header">
+                    <div class="table-title">🟠 Location 3</div>
+                    <div class="table-coords" id="coords-display-3">Click map to select location</div>
+                </div>
+                <table class="wind-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>TWD</th>
+                            <th>TWS ave</th>
+                            <th>TWS min&max</th>
+                        </tr>
+                    </thead>
+                    <tbody id="wind-tbody-3">
+                        <tr><td class="time-cell">08:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">09:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">10:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">11:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">12:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">13:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">14:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">15:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">16:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">17:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">18:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <div class="results">
             <div class="locations-comparison">
                 <div class="chart-title">📊 Multi-Location Wind Comparison</div>
@@ -639,13 +798,6 @@
                 map.removeLayer(markers[locationNum]);
             }
 
-            // Color scheme for markers
-            const colors = {
-                1: '#e74c3c', // Red
-                2: '#27ae60', // Green
-                3: '#f39c12'  // Orange
-            };
-
             // Create custom marker
             const marker = L.marker([lat, lon], {
                 title: `Location ${locationNum}`
@@ -658,8 +810,9 @@
             markers[locationNum] = marker;
             selectedLocations[locationNum] = { lat, lon };
 
-            // Update coordinate inputs
+            // Update coordinate inputs and tables
             updateLocationCard(locationNum, lat, lon);
+            updateLocationTable(locationNum, lat, lon);
             updateFetchButton();
         }
 
@@ -683,6 +836,23 @@
             // Mark card as active
             const card = document.getElementById(`location-${locationNum}-card`);
             if (card) card.classList.add('active');
+        }
+
+        function updateLocationTable(locationNum, lat, lon) {
+            const latDMS = decimalToDMS(lat, false);
+            const lonDMS = decimalToDMS(lon, true);
+
+            // Update table header coordinates
+            const coordsDisplay = document.getElementById(`coords-display-${locationNum}`);
+            if (coordsDisplay) {
+                coordsDisplay.textContent = `${latDMS}, ${lonDMS}`;
+            }
+
+            // Show the table
+            const table = document.getElementById(`table-location-${locationNum}`);
+            if (table) {
+                table.classList.remove('hidden');
+            }
         }
 
         function clearLocation(locationNum) {
@@ -711,7 +881,101 @@
             // Remove active class
             document.getElementById(`location-${locationNum}-card`).classList.remove('active');
 
+            // Hide table and reset coordinates
+            const table = document.getElementById(`table-location-${locationNum}`);
+            if (table) {
+                table.classList.add('hidden');
+            }
+
+            const coordsDisplay = document.getElementById(`coords-display-${locationNum}`);
+            if (coordsDisplay) {
+                coordsDisplay.textContent = 'Click map to select location';
+            }
+
+            // Clear wind data from table
+            clearWindTable(locationNum);
+
             updateFetchButton();
+        }
+
+        function clearWindTable(locationNum) {
+            const tbody = document.getElementById(`wind-tbody-${locationNum}`);
+            if (tbody) {
+                const rows = tbody.querySelectorAll('tr');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    // Skip first cell (time), clear others
+                    for (let i = 1; i < cells.length; i++) {
+                        cells[i].textContent = '--';
+                        cells[i].className = 'no-data';
+                    }
+                });
+            }
+        }
+
+        function updateWindTable(locationNum, data) {
+            const tbody = document.getElementById(`wind-tbody-${locationNum}`);
+            if (!tbody || !data.hourly) return;
+
+            const times = data.hourly.time || [];
+            const windSpeeds = data.hourly.wind_speed_10m || [];
+            const windDirs = data.hourly.wind_direction_10m || [];
+
+            // Define the time slots we want (8:00 to 18:00)
+            const targetHours = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+            const rows = tbody.querySelectorAll('tr');
+
+            targetHours.forEach((hour, index) => {
+                if (index >= rows.length) return;
+
+                const row = rows[index];
+                const cells = row.querySelectorAll('td');
+
+                // Find data for this hour
+                let windSpeed = null;
+                let windDir = null;
+
+                for (let i = 0; i < times.length; i++) {
+                    const timeDate = new Date(times[i]);
+                    if (timeDate.getHours() === hour) {
+                        windSpeed = windSpeeds[i];
+                        windDir = windDirs[i];
+                        break;
+                    }
+                }
+
+                // Update cells
+                if (cells.length >= 4) {
+                    // TWD (True Wind Direction)
+                    if (windDir !== null && windDir !== undefined) {
+                        cells[1].textContent = `${Math.round(windDir)}°`;
+                        cells[1].className = '';
+                    } else {
+                        cells[1].textContent = '--';
+                        cells[1].className = 'no-data';
+                    }
+
+                    // TWS ave (True Wind Speed average)
+                    if (windSpeed !== null && windSpeed !== undefined) {
+                        const speedKnots = kmhToKnots(windSpeed);
+                        cells[2].textContent = `${speedKnots.toFixed(1)} kt`;
+                        cells[2].className = '';
+                    } else {
+                        cells[2].textContent = '--';
+                        cells[2].className = 'no-data';
+                    }
+
+                    // TWS min&max (simplified - showing same as average for now)
+                    if (windSpeed !== null && windSpeed !== undefined) {
+                        const speedKnots = kmhToKnots(windSpeed);
+                        cells[3].textContent = `${speedKnots.toFixed(1)} kt`;
+                        cells[3].className = '';
+                    } else {
+                        cells[3].textContent = '--';
+                        cells[3].className = 'no-data';
+                    }
+                }
+            });
         }
 
         function updateFetchButton() {
@@ -784,6 +1048,9 @@
                         locationNum,
                         coords
                     };
+                    
+                    // Update the wind table for this location
+                    updateWindTable(locationNum, data);
                 });
 
                 await Promise.all(fetchPromises);
