@@ -918,8 +918,10 @@
             if (!tbody || !data.hourly) return;
 
             const times = data.hourly.time || [];
-            const windSpeeds = data.hourly.wind_speed_10m || [];
-            const windDirs = data.hourly.wind_direction_10m || [];
+            const windSpeeds10m = data.hourly.wind_speed_10m || [];
+            const windSpeeds20m = data.hourly.wind_speed_20m || [];
+            const windSpeeds50m = data.hourly.wind_speed_50m || [];
+            const windDirs20m = data.hourly.wind_direction_20m || [];
 
             // Define the time slots we want (8:00 to 18:00)
             const targetHours = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
@@ -932,47 +934,76 @@
                 const cells = row.querySelectorAll('td');
 
                 // Find data for this hour
-                let windSpeed = null;
-                let windDir = null;
+                let windSpeed10m = null;
+                let windSpeed20m = null;
+                let windSpeed50m = null;
+                let windDir20m = null;
 
                 for (let i = 0; i < times.length; i++) {
                     const timeDate = new Date(times[i]);
                     if (timeDate.getHours() === hour) {
-                        windSpeed = windSpeeds[i];
-                        windDir = windDirs[i];
+                        windSpeed10m = windSpeeds10m[i];
+                        windSpeed20m = windSpeeds20m[i];
+                        windSpeed50m = windSpeeds50m[i];
+                        windDir20m = windDirs20m[i];
                         break;
                     }
                 }
 
                 // Update cells
-                if (cells.length >= 4) {
-                    // TWD (True Wind Direction)
-                    if (windDir !== null && windDir !== undefined) {
-                        cells[1].textContent = `${Math.round(windDir)}°`;
+                if (cells.length >= 5) {
+                    // TWD 20m (True Wind Direction at 20m)
+                    if (windDir20m !== null && windDir20m !== undefined) {
+                        cells[1].textContent = `${Math.round(windDir20m)}°`;
                         cells[1].className = '';
                     } else {
                         cells[1].textContent = '--';
                         cells[1].className = 'no-data';
                     }
 
-                    // TWS ave (True Wind Speed average)
-                    if (windSpeed !== null && windSpeed !== undefined) {
-                        const speedKnots = kmhToKnots(windSpeed);
-                        cells[2].textContent = `${speedKnots.toFixed(1)} kt`;
+                    // TWS 10m (True Wind Speed at 10m) - with color
+                    if (windSpeed10m !== null && windSpeed10m !== undefined) {
+                        const speedKnots = kmhToKnots(windSpeed10m);
+                        cells[2].textContent = `${speedKnots.toFixed(1)}`;
                         cells[2].className = '';
+                        cells[2].style.backgroundColor = getWindSpeedColor(speedKnots);
+                        cells[2].style.color = speedKnots < 12 ? 'white' : 'black';
+                        cells[2].style.fontWeight = 'bold';
                     } else {
                         cells[2].textContent = '--';
                         cells[2].className = 'no-data';
+                        cells[2].style.backgroundColor = '';
+                        cells[2].style.color = '';
                     }
 
-                    // TWS min&max (simplified - showing same as average for now)
-                    if (windSpeed !== null && windSpeed !== undefined) {
-                        const speedKnots = kmhToKnots(windSpeed);
-                        cells[3].textContent = `${speedKnots.toFixed(1)} kt`;
+                    // TWS 20m (True Wind Speed at 20m) - with color
+                    if (windSpeed20m !== null && windSpeed20m !== undefined) {
+                        const speedKnots = kmhToKnots(windSpeed20m);
+                        cells[3].textContent = `${speedKnots.toFixed(1)}`;
                         cells[3].className = '';
+                        cells[3].style.backgroundColor = getWindSpeedColor(speedKnots);
+                        cells[3].style.color = speedKnots < 12 ? 'white' : 'black';
+                        cells[3].style.fontWeight = 'bold';
                     } else {
                         cells[3].textContent = '--';
                         cells[3].className = 'no-data';
+                        cells[3].style.backgroundColor = '';
+                        cells[3].style.color = '';
+                    }
+
+                    // TWS 50m (True Wind Speed at 50m) - with color
+                    if (windSpeed50m !== null && windSpeed50m !== undefined) {
+                        const speedKnots = kmhToKnots(windSpeed50m);
+                        cells[4].textContent = `${speedKnots.toFixed(1)}`;
+                        cells[4].className = '';
+                        cells[4].style.backgroundColor = getWindSpeedColor(speedKnots);
+                        cells[4].style.color = speedKnots < 12 ? 'white' : 'black';
+                        cells[4].style.fontWeight = 'bold';
+                    } else {
+                        cells[4].textContent = '--';
+                        cells[4].className = 'no-data';
+                        cells[4].style.backgroundColor = '';
+                        cells[4].style.color = '';
                     }
                 }
             });
