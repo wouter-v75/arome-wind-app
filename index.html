@@ -480,6 +480,7 @@
             padding: 12px;
             text-align: center;
             border: 1px solid #2c3e50;
+            font-weight: 600;
         }
 
         .wind-table td {
@@ -496,6 +497,11 @@
 
         .wind-table .no-data {
             color: #95a5a6;
+        }
+
+        .wind-table .wind-speed-cell {
+            font-weight: bold;
+            border-radius: 4px;
         }
 
         @media (max-width: 768px) {
@@ -638,23 +644,24 @@
                     <thead>
                         <tr>
                             <th>Time</th>
-                            <th>TWD</th>
-                            <th>TWS ave</th>
-                            <th>TWS min&max</th>
+                            <th>TWD 20m</th>
+                            <th>TWS 10m</th>
+                            <th>TWS 20m</th>
+                            <th>TWS 50m</th>
                         </tr>
                     </thead>
                     <tbody id="wind-tbody-1">
-                        <tr><td class="time-cell">08:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">09:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">10:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">11:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">12:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">13:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">14:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">15:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">16:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">17:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">18:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">08:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">09:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">10:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">11:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">12:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">13:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">14:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">15:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">16:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">17:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">18:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -669,23 +676,24 @@
                     <thead>
                         <tr>
                             <th>Time</th>
-                            <th>TWD</th>
-                            <th>TWS ave</th>
-                            <th>TWS min&max</th>
+                            <th>TWD 20m</th>
+                            <th>TWS 10m</th>
+                            <th>TWS 20m</th>
+                            <th>TWS 50m</th>
                         </tr>
                     </thead>
                     <tbody id="wind-tbody-2">
-                        <tr><td class="time-cell">08:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">09:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">10:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">11:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">12:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">13:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">14:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">15:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">16:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">17:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">18:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">08:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">09:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">10:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">11:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">12:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">13:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">14:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">15:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">16:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">17:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">18:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -700,23 +708,24 @@
                     <thead>
                         <tr>
                             <th>Time</th>
-                            <th>TWD</th>
-                            <th>TWS ave</th>
-                            <th>TWS min&max</th>
+                            <th>TWD 20m</th>
+                            <th>TWS 10m</th>
+                            <th>TWS 20m</th>
+                            <th>TWS 50m</th>
                         </tr>
                     </thead>
                     <tbody id="wind-tbody-3">
-                        <tr><td class="time-cell">08:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">09:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">10:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">11:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">12:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">13:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">14:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">15:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">16:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">17:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
-                        <tr><td class="time-cell">18:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">08:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">09:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">10:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">11:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">12:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">13:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">14:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">15:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">16:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">17:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
+                        <tr><td class="time-cell">18:00</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td><td class="no-data">--</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -751,6 +760,17 @@
         let markers = {};
         let windData = {};
         let selectedLocations = {};
+
+        // Wind speed color function based on knots
+        function getWindSpeedColor(speedKnots) {
+            if (speedKnots < 7) return '#1e3a8a'; // dark blue
+            if (speedKnots < 12) return '#60a5fa'; // light blue
+            if (speedKnots < 20) return '#10b981'; // green
+            if (speedKnots < 25) return '#fbbf24'; // yellow
+            if (speedKnots < 30) return '#f97316'; // orange
+            if (speedKnots < 35) return '#dc2626'; // red
+            return '#7c3aed'; // purple for >35
+        }
 
         // Initialize map
         function initMap() {
@@ -908,6 +928,8 @@
                     for (let i = 1; i < cells.length; i++) {
                         cells[i].textContent = '--';
                         cells[i].className = 'no-data';
+                        cells[i].style.backgroundColor = '';
+                        cells[i].style.color = '';
                     }
                 });
             }
@@ -965,7 +987,7 @@
                     if (windSpeed10m !== null && windSpeed10m !== undefined) {
                         const speedKnots = kmhToKnots(windSpeed10m);
                         cells[2].textContent = `${speedKnots.toFixed(1)}`;
-                        cells[2].className = '';
+                        cells[2].className = 'wind-speed-cell';
                         cells[2].style.backgroundColor = getWindSpeedColor(speedKnots);
                         cells[2].style.color = speedKnots < 12 ? 'white' : 'black';
                         cells[2].style.fontWeight = 'bold';
@@ -980,7 +1002,7 @@
                     if (windSpeed20m !== null && windSpeed20m !== undefined) {
                         const speedKnots = kmhToKnots(windSpeed20m);
                         cells[3].textContent = `${speedKnots.toFixed(1)}`;
-                        cells[3].className = '';
+                        cells[3].className = 'wind-speed-cell';
                         cells[3].style.backgroundColor = getWindSpeedColor(speedKnots);
                         cells[3].style.color = speedKnots < 12 ? 'white' : 'black';
                         cells[3].style.fontWeight = 'bold';
@@ -995,7 +1017,7 @@
                     if (windSpeed50m !== null && windSpeed50m !== undefined) {
                         const speedKnots = kmhToKnots(windSpeed50m);
                         cells[4].textContent = `${speedKnots.toFixed(1)}`;
-                        cells[4].className = '';
+                        cells[4].className = 'wind-speed-cell';
                         cells[4].style.backgroundColor = getWindSpeedColor(speedKnots);
                         cells[4].style.color = speedKnots < 12 ? 'white' : 'black';
                         cells[4].style.fontWeight = 'bold';
@@ -1096,9 +1118,11 @@
         }
 
         async function fetchLocationWindData(latitude, longitude, date, timezone) {
-            // Simplified wind parameters for comparison
+            // Enhanced wind parameters for the new table columns
             const windParams = [
                 'wind_speed_10m', 'wind_direction_10m',
+                'wind_speed_20m', 'wind_direction_20m',
+                'wind_speed_50m', 'wind_direction_50m',
                 'wind_speed_100m', 'wind_direction_100m',
                 'wind_speed_150m', 'wind_direction_150m'
             ];
@@ -1261,7 +1285,7 @@
                 3: '🟠 Location 3'
             };
 
-            const altitudes = [10, 100, 150]; // Available levels
+            const altitudes = [10, 20, 50, 100, 150]; // Available levels
 
             Object.entries(windData).forEach(([locationNum, data]) => {
                 const profileData = [];
