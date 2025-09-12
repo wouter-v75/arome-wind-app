@@ -1,4 +1,90 @@
-<!DOCTYPE html>
+function createWindProfileChart() {
+            const chartContainer = document.getElementById('windProfileChart');
+            
+            if (Object.keys(windData).length === 0) {
+                chartContainer.innerHTML = `
+                    <div class="placeholder-content">
+                        <div class="placeholder-icon">📊</div>
+                        <div class="placeholder-text">Vertical Wind Profile (Log Scale)</div>
+                        <div class="placeholder-subtext">Select locations and fetch data to see wind profiles up to 850hPa</div>
+                    </div>
+                `;
+                return;
+            }
+
+            const traces = [];
+            const colors = {
+                1: '#e74c3c',
+                2: '#27ae60',
+                3: '#f39c12'
+            };
+
+            const locationNames = {
+                1: '🔴 Location 1',
+                2: '🟢 Location 2',
+                3: '🟠 Location 3'
+            };
+
+            // Define all wind levels including pressure levels up to 850hPa
+            const windLevels = [
+                { name: '10m', param: 'wind_speed_10m', altitude: 10 },
+                { name: '20m', param: 'wind_speed_20m', altitude: 20 },
+                { name: '50m', param: 'wind_speed_50m', altitude: 50 },
+                { name: '100m', param: 'wind_speed_100m', altitude: 100 },
+                { name: '150m', param: 'wind_speed_150m', altitude: 150 },
+                { name: '200m', param: 'wind_speed_200m', altitude: 200 },
+                { name: '1000hPa', param: 'windspeed_1000hPa', altitude: pressureToAltitude(1000) },
+                { name: '975hPa', param: 'windspeed_975hPa', altitude: pressureToAltitude(975) },
+                { name: '950hPa', param: 'windspeed_950hPa', altitude: pressureToAltitude(950) },
+                { name: '925hPa', param: 'windspeed_925hPa', altitude: pressureToAltitude(925) },
+                { name: '900hPa', param: 'windspeed_900hPa', altitude: pressureToAltitude(900) },
+                { name: '875hPa', param: 'windspeed_875hPa', altitude: pressureToAltitude(875) },
+                { name: '850hPa', param: 'windspeed_850hPa', altitude: pressureToAltitude(850) }
+            ];
+
+            Object.entries(windData).forEach(([locationNum, data]) => {
+                const profileData = [];
+                
+                windLevels.forEach(level => {
+                    const speed = data.hourly[level.param]?.[selectedVerticalProfileTimeIndex];
+                    if (speed !== null && speed !== undefined) {
+                        profileData.push({
+                            name: level.name,
+                            altitude: Math.max(level.altitude, 1), // Ensure minimum 1m for log scale
+                            speed: kmhToKnots(speed)
+                        });
+                    }
+                });
+
+                if (profileData.length > 0) {
+                    // Sort by altitude
+                    profileData.sort((a, b) => a.altitude - b.altitude);
+
+                    traces.push({
+                        x: profileData.map(d => d.speed),
+                        y: profileData.map(d => d.altitude),
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        name: locationNames[locationNum],
+                        line: { color: colors[locationNum], width: 3 },
+                        marker: { size: 8, color: colors[locationNum] },
+                        text: profileData.map(d => 
+                            `<b>${locationNames[locationNum]}</b><br>` +
+                            `Level: ${d.name}<br>` +
+                            `Altitude: ${Math.round(d.altitude)} m<br>` +
+                            `Speed: ${d.speed.toFixed(1)} knots`
+                        ),
+                        hovertemplate: '%{text}<extra></extra>'
+                    });
+                }
+            });
+
+            if (traces.length === 0) {
+                chartContainer.innerHTML = `
+                    <div class="placeholder-content">
+                        <div class="placeholder-icon">❌</div>
+                        <div class="placeholder-text">No Profile Data Available</div>
+                        <div class<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
