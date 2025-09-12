@@ -1,90 +1,4 @@
-function createWindProfileChart() {
-            const chartContainer = document.getElementById('windProfileChart');
-            
-            if (Object.keys(windData).length === 0) {
-                chartContainer.innerHTML = `
-                    <div class="placeholder-content">
-                        <div class="placeholder-icon">📊</div>
-                        <div class="placeholder-text">Vertical Wind Profile (Log Scale)</div>
-                        <div class="placeholder-subtext">Select locations and fetch data to see wind profiles up to 850hPa</div>
-                    </div>
-                `;
-                return;
-            }
-
-            const traces = [];
-            const colors = {
-                1: '#e74c3c',
-                2: '#27ae60',
-                3: '#f39c12'
-            };
-
-            const locationNames = {
-                1: '🔴 Location 1',
-                2: '🟢 Location 2',
-                3: '🟠 Location 3'
-            };
-
-            // Define all wind levels including pressure levels up to 850hPa
-            const windLevels = [
-                { name: '10m', param: 'wind_speed_10m', altitude: 10 },
-                { name: '20m', param: 'wind_speed_20m', altitude: 20 },
-                { name: '50m', param: 'wind_speed_50m', altitude: 50 },
-                { name: '100m', param: 'wind_speed_100m', altitude: 100 },
-                { name: '150m', param: 'wind_speed_150m', altitude: 150 },
-                { name: '200m', param: 'wind_speed_200m', altitude: 200 },
-                { name: '1000hPa', param: 'windspeed_1000hPa', altitude: pressureToAltitude(1000) },
-                { name: '975hPa', param: 'windspeed_975hPa', altitude: pressureToAltitude(975) },
-                { name: '950hPa', param: 'windspeed_950hPa', altitude: pressureToAltitude(950) },
-                { name: '925hPa', param: 'windspeed_925hPa', altitude: pressureToAltitude(925) },
-                { name: '900hPa', param: 'windspeed_900hPa', altitude: pressureToAltitude(900) },
-                { name: '875hPa', param: 'windspeed_875hPa', altitude: pressureToAltitude(875) },
-                { name: '850hPa', param: 'windspeed_850hPa', altitude: pressureToAltitude(850) }
-            ];
-
-            Object.entries(windData).forEach(([locationNum, data]) => {
-                const profileData = [];
-                
-                windLevels.forEach(level => {
-                    const speed = data.hourly[level.param]?.[selectedVerticalProfileTimeIndex];
-                    if (speed !== null && speed !== undefined) {
-                        profileData.push({
-                            name: level.name,
-                            altitude: Math.max(level.altitude, 1), // Ensure minimum 1m for log scale
-                            speed: kmhToKnots(speed)
-                        });
-                    }
-                });
-
-                if (profileData.length > 0) {
-                    // Sort by altitude
-                    profileData.sort((a, b) => a.altitude - b.altitude);
-
-                    traces.push({
-                        x: profileData.map(d => d.speed),
-                        y: profileData.map(d => d.altitude),
-                        type: 'scatter',
-                        mode: 'lines+markers',
-                        name: locationNames[locationNum],
-                        line: { color: colors[locationNum], width: 3 },
-                        marker: { size: 8, color: colors[locationNum] },
-                        text: profileData.map(d => 
-                            `<b>${locationNames[locationNum]}</b><br>` +
-                            `Level: ${d.name}<br>` +
-                            `Altitude: ${Math.round(d.altitude)} m<br>` +
-                            `Speed: ${d.speed.toFixed(1)} knots`
-                        ),
-                        hovertemplate: '%{text}<extra></extra>'
-                    });
-                }
-            });
-
-            if (traces.length === 0) {
-                chartContainer.innerHTML = `
-                    <div class="placeholder-content">
-                        <div class="placeholder-icon">❌</div>
-                        <div class="placeholder-text">No Profile Data Available</div>
-                        <div class<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -825,9 +739,16 @@ function createWindProfileChart() {
             </div>
 
             <div class="chart-container">
-                <div class="chart-title">📈 Wind Profile Analysis</div>
+                <div class="chart-title">📈 Vertical Wind Profile (Log Scale)</div>
                 <div class="chart-wrapper">
                     <div id="windProfileChart"></div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">🌫️ Boundary Layer Height Analysis</div>
+                <div class="chart-wrapper">
+                    <div id="boundaryLayerChart"></div>
                 </div>
             </div>
         </div>
@@ -838,6 +759,7 @@ function createWindProfileChart() {
         let markers = {};
         let windData = {};
         let selectedLocations = {};
+        let selectedVerticalProfileTimeIndex = 0; // Default to first hour
 
         // Initialize map
         function initMap() {
@@ -995,6 +917,15 @@ function createWindProfileChart() {
             return `${degreesPadded} ${minutes.toFixed(1)}${direction}`;
         }
 
+        // Convert pressure level to approximate altitude in meters
+        function pressureToAltitude(pressure) {
+            // Using standard atmosphere approximation: h = 44330 * (1 - (P/P0)^0.1903)
+            // Where P0 = 1013.25 hPa (sea level pressure)
+            const P0 = 1013.25;
+            const altitude = 44330 * (1 - Math.pow(pressure / P0, 0.1903));
+            return Math.max(altitude, 1); // Ensure minimum 1m for log scale
+        }
+
         function showLoading() {
             document.querySelector('.loading').classList.add('show');
             document.querySelector('.error').classList.remove('show');
@@ -1056,12 +987,22 @@ function createWindProfileChart() {
         }
 
         async function fetchLocationWindData(latitude, longitude, date, timezone) {
-            // Wind parameters for comprehensive analysis
+            // Wind parameters for comprehensive analysis including boundary layer height
             const windParams = [
                 'wind_speed_10m', 'wind_direction_10m',
                 'wind_speed_20m', 'wind_direction_20m', 
                 'wind_speed_50m', 'wind_direction_50m',
-                'wind_speed_100m', 'wind_direction_100m'
+                'wind_speed_100m', 'wind_direction_100m',
+                'wind_speed_150m', 'wind_direction_150m',
+                'wind_speed_200m', 'wind_direction_200m',
+                'windspeed_1000hPa', 'winddirection_1000hPa',
+                'windspeed_975hPa', 'winddirection_975hPa',
+                'windspeed_950hPa', 'winddirection_950hPa',
+                'windspeed_925hPa', 'winddirection_925hPa',
+                'windspeed_900hPa', 'winddirection_900hPa',
+                'windspeed_875hPa', 'winddirection_875hPa',
+                'windspeed_850hPa', 'winddirection_850hPa',
+                'boundary_layer_height'
             ];
 
             const url = `https://api.open-meteo.com/v1/meteofrance?` +
@@ -1070,23 +1011,34 @@ function createWindProfileChart() {
                 `&wind_speed_unit=kmh&timezone=${timezone}&forecast_days=2` +
                 `&models=meteofrance_arome_france_hd`;
 
-            const response = await fetch(url);
-            
-            if (!response.ok) {
-                // Fallback to general forecast API
-                const fallbackUrl = `https://api.open-meteo.com/v1/forecast?` +
-                    `latitude=${latitude}&longitude=${longitude}` +
-                    `&hourly=${windParams.join(',')}` +
-                    `&wind_speed_unit=kmh&timezone=${timezone}&forecast_days=2`;
+            try {
+                const response = await fetch(url);
                 
-                const fallbackResponse = await fetch(fallbackUrl);
-                if (!fallbackResponse.ok) {
-                    throw new Error(`API Error: ${fallbackResponse.status}`);
+                if (!response.ok) {
+                    // Fallback to general forecast API
+                    const fallbackParams = [
+                        'wind_speed_10m', 'wind_direction_10m',
+                        'wind_speed_100m', 'wind_direction_100m',
+                        'boundary_layer_height'
+                    ];
+                    
+                    const fallbackUrl = `https://api.open-meteo.com/v1/forecast?` +
+                        `latitude=${latitude}&longitude=${longitude}` +
+                        `&hourly=${fallbackParams.join(',')}` +
+                        `&wind_speed_unit=kmh&timezone=${timezone}&forecast_days=2`;
+                    
+                    const fallbackResponse = await fetch(fallbackUrl);
+                    if (!fallbackResponse.ok) {
+                        throw new Error(`API Error: ${fallbackResponse.status}`);
+                    }
+                    return await fallbackResponse.json();
                 }
-                return await fallbackResponse.json();
-            }
 
-            return await response.json();
+                return await response.json();
+            } catch (error) {
+                console.error('Fetch error:', error);
+                throw error;
+            }
         }
 
         function generateWindTables() {
@@ -1114,7 +1066,7 @@ function createWindProfileChart() {
                             minute: '2-digit',
                             timeZone: 'UTC'
                         }),
-                        windDir20m: data.hourly.wind_direction_20m?.[index] || '--',
+                        windDir20m: data.hourly.wind_direction_20m?.[index] || data.hourly.wind_direction_10m?.[index] || '--',
                         windSpeed10m: data.hourly.wind_speed_10m?.[index] || '--',
                         windSpeed20m: data.hourly.wind_speed_20m?.[index] || '--',
                         windSpeed50m: data.hourly.wind_speed_50m?.[index] || '--'
@@ -1177,6 +1129,7 @@ function createWindProfileChart() {
             createLocationSummaries();
             createWindComparisonChart();
             createWindProfileChart();
+            createBoundaryLayerChart();
         }
 
         function createLocationSummaries() {
@@ -1286,6 +1239,19 @@ function createWindProfileChart() {
         }
 
         function createWindProfileChart() {
+            const chartContainer = document.getElementById('windProfileChart');
+            
+            if (Object.keys(windData).length === 0) {
+                chartContainer.innerHTML = `
+                    <div class="placeholder-content">
+                        <div class="placeholder-icon">📊</div>
+                        <div class="placeholder-text">Vertical Wind Profile (Log Scale)</div>
+                        <div class="placeholder-subtext">Select locations and fetch data to see wind profiles up to 850hPa</div>
+                    </div>
+                `;
+                return;
+            }
+
             const traces = [];
             const colors = {
                 1: '#e74c3c',
@@ -1353,6 +1319,17 @@ function createWindProfileChart() {
                 }
             });
 
+            if (traces.length === 0) {
+                chartContainer.innerHTML = `
+                    <div class="placeholder-content">
+                        <div class="placeholder-icon">❌</div>
+                        <div class="placeholder-text">No Profile Data Available</div>
+                        <div class="placeholder-subtext">Unable to create vertical wind profile from available data</div>
+                    </div>
+                `;
+                return;
+            }
+
             // Get selected time for title
             const firstLocationData = Object.values(windData)[0];
             const selectedTime = firstLocationData ? new Date(firstLocationData.hourly.time[selectedVerticalProfileTimeIndex]) : new Date();
@@ -1378,6 +1355,80 @@ function createWindProfileChart() {
             };
 
             Plotly.newPlot('windProfileChart', traces, layout, { responsive: true });
+        }
+
+        function createBoundaryLayerChart() {
+            const chartContainer = document.getElementById('boundaryLayerChart');
+            
+            const traces = [];
+            const colors = {
+                1: '#e74c3c',
+                2: '#27ae60',
+                3: '#f39c12'
+            };
+
+            const locationNames = {
+                1: '🔴 Location 1',
+                2: '🟢 Location 2',
+                3: '🟠 Location 3'
+            };
+
+            Object.entries(windData).forEach(([locationNum, data]) => {
+                const boundaryLayerHeight = data.hourly.boundary_layer_height;
+                
+                if (boundaryLayerHeight && boundaryLayerHeight.some(h => h !== null && h !== undefined)) {
+                    const times = data.hourly.time.map(t => new Date(t));
+                    
+                    traces.push({
+                        x: times,
+                        y: boundaryLayerHeight,
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        name: locationNames[locationNum],
+                        line: { color: colors[locationNum], width: 3 },
+                        marker: { size: 6 },
+                        connectgaps: true,
+                        text: boundaryLayerHeight.map((h, i) => 
+                            h !== null ? 
+                            `<b>${locationNames[locationNum]}</b><br>` +
+                            `Time: ${new Date(data.hourly.time[i]).toLocaleTimeString('en-GB', { timeZone: 'UTC' })} UTC<br>` +
+                            `Boundary Layer Height: ${Math.round(h)} m` : null
+                        ),
+                        hovertemplate: '%{text}<extra></extra>'
+                    });
+                }
+            });
+
+            if (traces.length === 0) {
+                chartContainer.innerHTML = `
+                    <div class="placeholder-content">
+                        <div class="placeholder-icon">🌫️</div>
+                        <div class="placeholder-text">No Boundary Layer Data Available</div>
+                        <div class="placeholder-subtext">Boundary layer height data not available in the current forecast</div>
+                    </div>
+                `;
+                return;
+            }
+
+            const layout = {
+                title: 'Boundary Layer Height Over Time',
+                xaxis: { 
+                    title: 'Time',
+                    type: 'date',
+                    gridcolor: 'rgba(200, 200, 200, 0.3)'
+                },
+                yaxis: { 
+                    title: 'Boundary Layer Height (meters)',
+                    rangemode: 'tozero',
+                    gridcolor: 'rgba(200, 200, 200, 0.3)'
+                },
+                hovermode: 'x unified',
+                legend: { orientation: 'h', y: -0.15 },
+                margin: { t: 40, b: 100 },
+                plot_bgcolor: 'rgba(248, 249, 250, 0.8)'
+            };
+
+            Plotly.newPlot('boundaryLayerChart', traces, layout, { responsive: true });
         }
 
         // Initialize everything when page loads
