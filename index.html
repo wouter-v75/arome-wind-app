@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AROME Wind Analysis</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <title>Enhanced AROME Wind Analysis with Pressure Levels</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.24.1/plotly.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         * {
             margin: 0;
@@ -21,7 +22,7 @@
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
             padding: 20px;
         }
@@ -48,7 +49,7 @@
             font-size: 1.1rem;
         }
 
-        .input-section {
+        .map-selection-section {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             border-radius: 15px;
@@ -57,11 +58,101 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         }
 
-        .input-grid {
+        .map-section-title {
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .map-container {
+            height: 400px;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .map-instructions {
+            background: #3498db;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+        }
+
+        .coordinates-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 25px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .coordinate-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            border-left: 5px solid #3498db;
+            position: relative;
+        }
+
+        .coordinate-card.active {
+            border-left-color: #e74c3c;
+            background: #fff5f5;
+        }
+
+        .coordinate-card.location-2 {
+            border-left-color: #27ae60;
+        }
+
+        .coordinate-card.location-2.active {
+            background: #f0fff4;
+        }
+
+        .coordinate-card.location-3 {
+            border-left-color: #f39c12;
+        }
+
+        .coordinate-card.location-3.active {
+            background: #fffbf0;
+        }
+
+        .coordinate-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .coordinate-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .coordinate-status {
+            font-size: 0.8rem;
+            padding: 3px 6px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .coordinate-status.selected {
+            background: #e8f5e8;
+            color: #27ae60;
+        }
+
+        .coordinate-status.empty {
+            background: #ffeaa7;
+            color: #e17055;
+        }
+
+        .coordinate-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
         }
 
         .input-group {
@@ -72,17 +163,17 @@
         .input-group label {
             font-weight: 600;
             color: #2c3e50;
-            margin-bottom: 8px;
-            font-size: 0.9rem;
+            margin-bottom: 5px;
+            font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
         .input-group input, .input-group select {
-            padding: 12px 15px;
+            padding: 8px 10px;
             border: 2px solid #e0e6ed;
-            border-radius: 8px;
-            font-size: 1rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
             transition: all 0.3s ease;
             background: white;
         }
@@ -91,6 +182,41 @@
             outline: none;
             border-color: #3498db;
             box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .clear-location-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            font-size: 10px;
+            display: none;
+        }
+
+        .clear-location-btn.show {
+            display: block;
+        }
+
+        .control-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
         }
 
         .fetch-btn {
@@ -105,9 +231,10 @@
             transition: all 0.3s ease;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            width: 100%;
         }
 
-        .fetch-btn:hover {
+        .fetch-btn:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 10px 25px rgba(52, 152, 219, 0.3);
         }
@@ -164,51 +291,237 @@
             display: block;
         }
 
-        .results {
-            display: none;
+        /* WIND SPEED COLOR SCALE */
+        .wind-speed-under-5 {
+            background-color: #003f7f !important;
+            color: white !important;
+            font-weight: bold;
         }
 
-        .results.show {
-            display: block;
+        .wind-speed-5-10 {
+            background-color: #00bfff !important;
+            color: black !important;
+            font-weight: bold;
         }
 
-        .info-panel {
+        .wind-speed-10-15 {
+            background-color: #00ff00 !important;
+            color: black !important;
+            font-weight: bold;
+        }
+
+        .wind-speed-15-20 {
+            background-color: #ffff00 !important;
+            color: black !important;
+            font-weight: bold;
+        }
+
+        .wind-speed-20-25 {
+            background-color: #ff8c00 !important;
+            color: white !important;
+            font-weight: bold;
+        }
+
+        .wind-speed-25-30 {
+            background-color: #ff0000 !important;
+            color: white !important;
+            font-weight: bold;
+        }
+
+        .wind-speed-30-35 {
+            background-color: #8b4513 !important;
+            color: white !important;
+            font-weight: bold;
+        }
+
+        .wind-speed-over-35 {
+            background-color: #4b0000 !important;
+            color: white !important;
+            font-weight: bold;
+        }
+
+        /* COLOR LEGEND */
+        .wind-speed-legend {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-left: 5px solid #3498db;
+        }
+
+        .legend-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .legend-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 5px;
+        }
+
+        .legend-item {
+            text-align: center;
+            padding: 5px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        /* PRESSURE LEVEL LEGEND */
+        .pressure-level-legend {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-left: 5px solid #9b59b6;
+        }
+
+        .pressure-legend-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .pressure-legend-item {
+            text-align: center;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: #e8f4fd;
+            color: #2c3e50;
+            border: 1px solid #3498db;
+        }
+
+        /* HOURLY TABLES */
+        .tables-section {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             border-radius: 15px;
-            padding: 25px;
+            padding: 30px;
             margin-bottom: 30px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         }
 
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-        }
-
-        .info-item {
-            text-align: center;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-
-        .info-item .label {
-            font-size: 0.8rem;
-            color: #7f8c8d;
-            text-transform: uppercase;
+        .tables-title {
+            font-size: 1.4rem;
             font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-
-        .info-item .value {
-            font-size: 1.2rem;
             color: #2c3e50;
-            font-weight: 700;
-            margin-top: 5px;
+            margin-bottom: 20px;
+            text-align: center;
         }
 
+        .tables-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+        }
+
+        .table-container {
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #e0e6ed;
+        }
+
+        .table-container.location-1 {
+            border-left: 5px solid #e74c3c;
+        }
+
+        .table-container.location-2 {
+            border-left: 5px solid #27ae60;
+        }
+
+        .table-container.location-3 {
+            border-left: 5px solid #f39c12;
+        }
+
+        .table-header {
+            padding: 15px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: white;
+            text-align: center;
+        }
+
+        .table-header.location-1 {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        .table-header.location-2 {
+            background: linear-gradient(135deg, #27ae60, #229954);
+        }
+
+        .table-header.location-3 {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+
+        .wind-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            font-size: 0.9rem;
+        }
+
+        .wind-table th {
+            background: #f8f9fa;
+            padding: 10px 8px;
+            text-align: center;
+            font-weight: 600;
+            color: #2c3e50;
+            border-bottom: 2px solid #e0e6ed;
+            font-size: 0.85rem;
+        }
+
+        .wind-table td {
+            padding: 8px;
+            text-align: center;
+            border-bottom: 1px solid #f0f0f0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .wind-table tbody tr:hover {
+            background: rgba(248, 249, 250, 0.8);
+        }
+
+        .wind-table .time-cell {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .placeholder-table {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 300px;
+            color: #7f8c8d;
+            text-align: center;
+            background: #f8f9fa;
+        }
+
+        .placeholder-table-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .placeholder-table-text {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .placeholder-table-subtext {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        /* CHARTS */
         .chart-container {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
@@ -260,109 +573,103 @@
             background: white;
         }
 
-        .level-selector {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 20px;
-            justify-content: center;
+        .locations-comparison {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         }
 
-        .level-btn {
-            padding: 8px 15px;
-            border: 2px solid #3498db;
-            background: white;
-            color: #3498db;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .level-btn.active {
-            background: #3498db;
-            color: white;
-        }
-
-        .level-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
-        }
-
-        .wind-summary {
+        .comparison-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
-            margin-top: 20px;
+            margin-bottom: 20px;
         }
 
-        .summary-card {
+        .location-summary {
             background: #f8f9fa;
+            border-radius: 12px;
             padding: 20px;
-            border-radius: 10px;
+            border-left: 5px solid #3498db;
+        }
+
+        .location-summary.location-2 {
+            border-left-color: #27ae60;
+        }
+
+        .location-summary.location-3 {
+            border-left-color: #f39c12;
+        }
+
+        .location-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .location-coords {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+            font-family: monospace;
+        }
+
+        .wind-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .wind-stat {
+            text-align: center;
+            padding: 8px;
+            background: white;
+            border-radius: 6px;
+        }
+
+        .wind-stat-label {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .wind-stat-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-top: 2px;
+        }
+
+        .placeholder-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #7f8c8d;
             text-align: center;
         }
 
-        .summary-card h3 {
-            color: #2c3e50;
-            margin-bottom: 10px;
-            font-size: 1rem;
+        .placeholder-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.5;
         }
 
-        .summary-card .value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #3498db;
+        .placeholder-text {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 8px;
         }
 
-        /* WIND SPEED COLOR SCALE - NEW */
-        .wind-speed-under-5 {
-            background-color: #003f7f !important;
-            color: white !important;
-            font-weight: bold;
-        }
-
-        .wind-speed-5-10 {
-            background-color: #00bfff !important;
-            color: black !important;
-            font-weight: bold;
-        }
-
-        .wind-speed-10-15 {
-            background-color: #00ff00 !important;
-            color: black !important;
-            font-weight: bold;
-        }
-
-        .wind-speed-15-20 {
-            background-color: #ffff00 !important;
-            color: black !important;
-            font-weight: bold;
-        }
-
-        .wind-speed-20-25 {
-            background-color: #ff8c00 !important;
-            color: white !important;
-            font-weight: bold;
-        }
-
-        .wind-speed-25-30 {
-            background-color: #ff0000 !important;
-            color: white !important;
-            font-weight: bold;
-        }
-
-        .wind-speed-30-35 {
-            background-color: #8b4513 !important;
-            color: white !important;
-            font-weight: bold;
-        }
-
-        .wind-speed-over-35 {
-            background-color: #4b0000 !important;
-            color: white !important;
-            font-weight: bold;
+        .placeholder-subtext {
+            font-size: 0.9rem;
+            opacity: 0.7;
         }
 
         @media (max-width: 768px) {
@@ -370,12 +677,32 @@
                 font-size: 2rem;
             }
             
-            .input-grid {
+            .coordinates-grid {
                 grid-template-columns: 1fr;
             }
             
+            .control-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .map-container {
+                height: 350px;
+            }
+            
+            .tables-grid {
+                grid-template-columns: 1fr;
+            }
+
             .chart-wrapper {
                 height: 400px;
+            }
+
+            .chart-controls {
+                flex-direction: column;
+            }
+
+            .pressure-legend-items {
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
             }
         }
     </style>
@@ -383,33 +710,95 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>AROME Wind Analysis</h1>
-            <p>High-resolution wind forecasts with vertical profile analysis and boundary layer data</p>
+            <h1>🌊 Enhanced AROME Wind Analysis</h1>
+            <p>Interactive map-based high-resolution wind forecasts with boundary layer analysis and pressure level wind data</p>
         </div>
 
-        <div class="input-section">
-            <div class="cors-warning" style="background: #f39c12; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                <strong>⚠️ CORS Notice:</strong> This app may be blocked by browser security policies when accessing weather APIs directly. 
-                If you encounter "Failed to fetch" errors, try:
+        <div class="map-selection-section">
+            <div class="map-section-title">📍 Select Up to 3 Locations on Map</div>
+            
+            <div class="map-instructions">
+                <strong>🗺️ How to use:</strong> Click on the map to select up to 3 locations for wind analysis comparison. 
+                The first location appears in <span style="color: #e74c3c; font-weight: bold;">red</span>, 
+                second in <span style="color: #27ae60; font-weight: bold;">green</span>, 
+                and third in <span style="color: #f39c12; font-weight: bold;">orange</span>. 
+                Click the × button on any location card to remove it.
+            </div>
+
+            <div id="map" class="map-container"></div>
+
+            <div class="coordinates-grid">
+                <div class="coordinate-card location-1" id="location-1-card">
+                    <button class="clear-location-btn" onclick="clearLocation(1)">×</button>
+                    <div class="coordinate-header">
+                        <div class="coordinate-title">🔴 Location 1</div>
+                        <div class="coordinate-status selected" id="location-1-status">Paris Selected</div>
+                    </div>
+                    <div class="coordinate-inputs">
+                        <div class="input-group">
+                            <label>Latitude</label>
+                            <input type="text" id="lat-1" placeholder="48 51.4N" readonly>
+                        </div>
+                        <div class="input-group">
+                            <label>Longitude</label>
+                            <input type="text" id="lon-1" placeholder="002 21.1E" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="coordinate-card location-2" id="location-2-card">
+                    <button class="clear-location-btn" onclick="clearLocation(2)">×</button>
+                    <div class="coordinate-header">
+                        <div class="coordinate-title">🟢 Location 2</div>
+                        <div class="coordinate-status empty" id="location-2-status">Not Selected</div>
+                    </div>
+                    <div class="coordinate-inputs">
+                        <div class="input-group">
+                            <label>Latitude</label>
+                            <input type="text" id="lat-2" placeholder="Click map to select" readonly>
+                        </div>
+                        <div class="input-group">
+                            <label>Longitude</label>
+                            <input type="text" id="lon-2" placeholder="Click map to select" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="coordinate-card location-3" id="location-3-card">
+                    <button class="clear-location-btn" onclick="clearLocation(3)">×</button>
+                    <div class="coordinate-header">
+                        <div class="coordinate-title">🟠 Location 3</div>
+                        <div class="coordinate-status empty" id="location-3-status">Not Selected</div>
+                    </div>
+                    <div class="coordinate-inputs">
+                        <div class="input-group">
+                            <label>Latitude</label>
+                            <input type="text" id="lat-3" placeholder="Click map to select" readonly>
+                        </div>
+                        <div class="input-group">
+                            <label>Longitude</label>
+                            <input type="text" id="lon-3" placeholder="Click map to select" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="control-section">
+            <div style="background: #2ecc71; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <strong>🌐 ENHANCED FORECAST SOURCES:</strong> This app now includes pressure level wind data for comprehensive vertical analysis.
+                <br><br>
+                <strong>Data Sources:</strong>
                 <ul style="margin: 10px 0 0 20px;">
-                    <li>Using a different browser (some are more permissive)</li>
-                    <li>Deploying this HTML file to a web server (GitHub Pages, Netlify, etc.)</li>
-                    <li>Using browser developer mode or CORS extensions</li>
+                    <li><strong>AROME Model:</strong> Météo-France 1.5km wind forecasts</li>
+                    <li><strong>GFS Model:</strong> NOAA global model for boundary layer height + pressure levels</li>
+                    <li><strong>Coverage:</strong> Europe-focused with global coverage for pressure levels</li>
+                    <li><strong>Wind Levels:</strong> 10m, 20m, 50m, 100m, 150m, 200m + 925hPa, 900hPa, 850hPa pressure levels</li>
                 </ul>
             </div>
-            <div class="input-grid">
+            <div class="control-grid">
                 <div class="input-group">
-                    <label for="latitude">Latitude (DD MM.M N/S)</label>
-                    <input type="text" id="latitude" placeholder="50 48.5N" value="48 51.4N">
-                    <small style="color: #7f8c8d; margin-top: 5px; font-size: 0.8rem;">Format: DD MM.M N/S (e.g., 50 48.5N)</small>
-                </div>
-                <div class="input-group">
-                    <label for="longitude">Longitude (DDD MM.M E/W)</label>
-                    <input type="text" id="longitude" placeholder="001 17.2W" value="002 21.1E">
-                    <small style="color: #7f8c8d; margin-top: 5px; font-size: 0.8rem;">Format: DDD MM.M E/W (e.g., 001 17.2W)</small>
-                </div>
-                <div class="input-group">
-                    <label for="date">Date</label>
+                    <label for="date">Start Date</label>
                     <input type="date" id="date">
                 </div>
                 <div class="input-group">
@@ -423,79 +812,110 @@
                     </select>
                 </div>
             </div>
-            <button class="fetch-btn" onclick="fetchWindData()">Analyze Wind Data</button>
+            <button class="fetch-btn" id="fetch-btn" onclick="fetchAllLocationsData()" disabled>
+                🌪️ Analyze Wind Data for Selected Locations
+            </button>
         </div>
 
         <div class="loading">
             <div class="spinner"></div>
-            <div>Fetching AROME wind data...</div>
+            <div>Fetching AROME + GFS model forecasts including pressure level data...</div>
         </div>
 
         <div class="error">
             <div id="error-message"></div>
         </div>
 
-        <div class="results">
-            <div class="info-panel">
-                <div class="info-grid">
-                    <div class="info-item">
-                        <div class="label">Location</div>
-                        <div class="value" id="location-info">--</div>
+        <!-- LEGENDS -->
+        <div class="tables-section">
+            <div class="wind-speed-legend">
+                <div class="legend-title">🎨 Wind Speed Color Scale (knots)</div>
+                <div class="legend-items">
+                    <div class="legend-item wind-speed-under-5">&lt;5</div>
+                    <div class="legend-item wind-speed-5-10">5-10</div>
+                    <div class="legend-item wind-speed-10-15">10-15</div>
+                    <div class="legend-item wind-speed-15-20">15-20</div>
+                    <div class="legend-item wind-speed-20-25">20-25</div>
+                    <div class="legend-item wind-speed-25-30">25-30</div>
+                    <div class="legend-item wind-speed-30-35">30-35</div>
+                    <div class="legend-item wind-speed-over-35">&gt;35</div>
+                </div>
+            </div>
+
+            <div class="pressure-level-legend">
+                <div class="legend-title">🏔️ Pressure Level Approximate Altitudes (International Standard Atmosphere)</div>
+                <div class="pressure-legend-items">
+                    <div class="pressure-legend-item">925hPa ≈ 760m</div>
+                    <div class="pressure-legend-item">900hPa ≈ 990m</div>
+                    <div class="pressure-legend-item">850hPa ≈ 1480m</div>
+                </div>
+                <div style="font-size: 0.8rem; margin-top: 8px; color: #7f8c8d; text-align: center;">
+                    * Actual altitudes vary with atmospheric conditions and local pressure
+                </div>
+            </div>
+
+            <div class="tables-title">📊 Hourly Wind Tables (08:00 - 18:00 UTC)</div>
+            <div class="tables-grid">
+                <div class="table-container location-1" id="table-container-1">
+                    <div class="table-header location-1">🔴 Location 1 - Wind Forecast</div>
+                    <div id="wind-table-1">
+                        <div class="placeholder-table">
+                            <div class="placeholder-table-icon">📋</div>
+                            <div class="placeholder-table-text">Location 1 Wind Table</div>
+                            <div class="placeholder-table-subtext">Select locations and fetch data to see color-coded hourly wind forecasts</div>
+                        </div>
                     </div>
-                    <div class="info-item">
-                        <div class="label">Elevation</div>
-                        <div class="value" id="elevation-info">--</div>
+                </div>
+
+                <div class="table-container location-2" id="table-container-2" style="display: none;">
+                    <div class="table-header location-2">🟢 Location 2 - Wind Forecast</div>
+                    <div id="wind-table-2">
+                        <div class="placeholder-table">
+                            <div class="placeholder-table-icon">📋</div>
+                            <div class="placeholder-table-text">Location 2 Wind Table</div>
+                            <div class="placeholder-table-subtext">Select second location on map</div>
+                        </div>
                     </div>
-                    <div class="info-item">
-                        <div class="label">Model</div>
-                        <div class="value">AROME</div>
+                </div>
+
+                <div class="table-container location-3" id="table-container-3" style="display: none;">
+                    <div class="table-header location-3">🟠 Location 3 - Wind Forecast</div>
+                    <div id="wind-table-3">
+                        <div class="placeholder-table">
+                            <div class="placeholder-table-icon">📋</div>
+                            <div class="placeholder-table-text">Location 3 Wind Table</div>
+                            <div class="placeholder-table-subtext">Select third location on map</div>
+                        </div>
                     </div>
-                    <div class="info-item">
-                        <div class="label">Resolution</div>
-                        <div class="value">1.5 km</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="label">Data Points</div>
-                        <div class="value" id="data-points">--</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="label">Time Range</div>
-                        <div class="value" id="time-range">--</div>
-                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RESULTS SECTION (ONLY SHOWS AFTER DATA FETCH) -->
+        <div id="results" style="display: none;">
+            <div class="locations-comparison">
+                <div class="chart-title">📊 Multi-Location Wind Comparison</div>
+                <div class="comparison-grid" id="comparison-grid">
+                    <!-- Location summaries will be populated here -->
                 </div>
             </div>
 
             <div class="chart-container">
-                <div class="chart-title">Wind Speed Profile - All Levels</div>
-                <div class="level-selector" id="level-selector"></div>
+                <div class="chart-title">🌬️ Wind Speed Comparison - All Locations</div>
                 <div class="chart-wrapper">
-                    <div id="windSpeedChart"></div>
+                    <div id="windComparisonChart"></div>
                 </div>
             </div>
 
             <div class="chart-container">
-                <div class="chart-title">Wind Direction Profile - All Levels</div>
-                <div class="chart-wrapper">
-                    <div id="windDirectionChart"></div>
-                </div>
-            </div>
-
-            <div class="chart-container">
-                <div class="chart-title">Wind Barbs Visualization</div>
-                <div class="chart-wrapper">
-                    <div id="windBarbsChart"></div>
-                </div>
-            </div>
-
-            <div class="chart-container">
-                <div class="chart-title">Boundary Layer Height (GFS Model)</div>
+                <div class="chart-title">🏔️ Boundary Layer Height (GFS Model)</div>
                 <div class="chart-wrapper">
                     <div id="boundaryLayerChart"></div>
                 </div>
             </div>
 
             <div class="chart-container">
-                <div class="chart-title">Vertical Wind Profile</div>
+                <div class="chart-title">📈 Vertical Wind Profile Analysis (Including Pressure Levels)</div>
                 <div class="chart-controls">
                     <div class="time-selector">
                         <label for="profile-time-select">Select Time:</label>
@@ -505,238 +925,180 @@
                     </div>
                 </div>
                 <div class="chart-wrapper">
-                    <div id="verticalProfileChart"></div>
+                    <div id="windProfileChart"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        let windData = null;
-        let boundaryLayerData = null;
-        let selectedLevels = new Set();
+        let map;
+        let markers = {};
+        let windData = {};
+        let pressureLevelData = {};
+        let boundaryLayerData = {};
+        let selectedLocations = {};
         let selectedVerticalProfileTimeIndex = 0;
 
-        // Set today's date as default
-        document.getElementById('date').valueAsDate = new Date();
-
-        // Available levels up to 925 hPa
-        const pressureLevels = [
-            { level: '10m', param: 'wind_speed_10m', dir_param: 'wind_direction_10m', altitude: 10, color: '#e74c3c' },
-            { level: '20m', param: 'wind_speed_20m', dir_param: 'wind_direction_20m', altitude: 20, color: '#f39c12' },
-            { level: '50m', param: 'wind_speed_50m', dir_param: 'wind_direction_50m', altitude: 50, color: '#f1c40f' },
-            { level: '100m', param: 'wind_speed_100m', dir_param: 'wind_direction_100m', altitude: 100, color: '#2ecc71' },
-            { level: '150m', param: 'wind_speed_150m', dir_param: 'wind_direction_150m', altitude: 150, color: '#3498db' },
-            { level: '200m', param: 'wind_speed_200m', dir_param: 'wind_direction_200m', altitude: 200, color: '#9b59b6' },
-            { level: '1000hPa', param: 'wind_speed_1000hPa', dir_param: 'wind_direction_1000hPa', altitude: 110, color: '#1abc9c' },
-            { level: '975hPa', param: 'wind_speed_975hPa', dir_param: 'wind_direction_975hPa', altitude: 320, color: '#34495e' },
-            { level: '950hPa', param: 'wind_speed_950hPa', dir_param: 'wind_direction_950hPa', altitude: 500, color: '#e67e22' },
-            { level: '925hPa', param: 'wind_speed_925hPa', dir_param: 'wind_direction_925hPa', altitude: 800, color: '#8e44ad' }
-        ];
-
-        function showLoading() {
-            document.querySelector('.loading').classList.add('show');
-            document.querySelector('.error').classList.remove('show');
-            document.querySelector('.results').classList.remove('show');
-            document.querySelector('.fetch-btn').disabled = true;
-        }
-
-        function hideLoading() {
-            document.querySelector('.loading').classList.remove('show');
-            document.querySelector('.fetch-btn').disabled = false;
-        }
-
-        function showError(message) {
-            document.getElementById('error-message').textContent = message;
-            document.querySelector('.error').classList.add('show');
-            hideLoading();
-        }
-
-        function showResults() {
-            document.querySelector('.results').classList.add('show');
-            hideLoading();
-        }
-
-        function kmhToKnots(kmh) {
-            return kmh * 0.539957;
-        }
-
-        function getWindSpeedColorClass(speedKnots) {
-            if (speedKnots < 5) return 'wind-speed-under-5';
-            if (speedKnots < 10) return 'wind-speed-5-10';
-            if (speedKnots < 15) return 'wind-speed-10-15';
-            if (speedKnots < 20) return 'wind-speed-15-20';
-            if (speedKnots < 25) return 'wind-speed-20-25';
-            if (speedKnots < 30) return 'wind-speed-25-30';
-            if (speedKnots < 35) return 'wind-speed-30-35';
-            return 'wind-speed-over-35';
-        }
-
-        function parseCoordinate(coordStr, isLongitude = false) {
-            // Remove extra spaces and convert to uppercase
-            coordStr = coordStr.trim().toUpperCase();
+        // Pressure to altitude conversion using International Standard Atmosphere
+        function pressureToAltitude(pressureHPa) {
+            // International Standard Atmosphere approximation
+            // P = P0 * (1 - 0.0065 * h / T0)^(g * M / (R * 0.0065))
+            // Rearranged: h = (T0 / 0.0065) * (1 - (P / P0)^((R * 0.0065) / (g * M)))
             
-            // Regex for DD MM.M N/S/E/W format
-            const regex = isLongitude 
-                ? /^(\d{1,3})\s+(\d{1,2}(?:\.\d+)?)\s*([EW])$/
-                : /^(\d{1,2})\s+(\d{1,2}(?:\.\d+)?)\s*([NS])$/;
+            const P0 = 1013.25; // Sea level pressure in hPa
+            const T0 = 288.15;   // Sea level temperature in Kelvin (15°C)
+            const g = 9.80665;   // Acceleration due to gravity
+            const M = 0.0289644; // Molar mass of Earth's air
+            const R = 8.31447;   // Universal gas constant
+            const L = 0.0065;    // Temperature lapse rate
             
-            const match = coordStr.match(regex);
-            if (!match) {
-                throw new Error(`Invalid ${isLongitude ? 'longitude' : 'latitude'} format. Expected format: ${isLongitude ? 'DDD MM.M E/W' : 'DD MM.M N/S'}`);
-            }
+            const exponent = (R * L) / (g * M);
+            const altitude = (T0 / L) * (1 - Math.pow(pressureHPa / P0, exponent));
             
-            const degrees = parseInt(match[1]);
-            const minutes = parseFloat(match[2]);
-            const direction = match[3];
-            
-            // Validate ranges
-            if (isLongitude) {
-                if (degrees > 180 || minutes >= 60) {
-                    throw new Error('Invalid longitude values. Degrees must be ≤180, minutes must be <60');
-                }
-            } else {
-                if (degrees > 90 || minutes >= 60) {
-                    throw new Error('Invalid latitude values. Degrees must be ≤90, minutes must be <60');
+            return Math.max(altitude, 0); // Ensure non-negative altitude
+        }
+
+        // Initialize map
+        function initMap() {
+            // Center map on Europe (good AROME coverage area)
+            map = L.map('map').setView([48.8566, 2.3522], 6);
+
+            // Add OpenStreetMap tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Add click event to map
+            map.on('click', onMapClick);
+
+            // Set default location 1 (Paris)
+            const defaultLat = 48.8566;
+            const defaultLon = 2.3522;
+            addMarker(defaultLat, defaultLon, 1);
+        }
+
+        function onMapClick(e) {
+            const lat = e.latlng.lat;
+            const lon = e.latlng.lng;
+
+            // Find next available location slot
+            let locationNum = 1;
+            for (let i = 1; i <= 3; i++) {
+                if (!selectedLocations[i]) {
+                    locationNum = i;
+                    break;
                 }
             }
-            
-            // Convert to decimal degrees
-            let decimal = degrees + (minutes / 60);
-            
-            // Apply direction
-            if (direction === 'S' || direction === 'W') {
-                decimal = -decimal;
+
+            // If all slots filled, replace location 1
+            if (Object.keys(selectedLocations).length >= 3) {
+                locationNum = 1;
             }
-            
-            return decimal;
+
+            addMarker(lat, lon, locationNum);
         }
 
-        async function fetchWindData() {
-            const latitudeStr = document.getElementById('latitude').value.trim();
-            const longitudeStr = document.getElementById('longitude').value.trim();
-            const date = document.getElementById('date').value;
-            const timezone = document.getElementById('timezone').value;
-
-            if (!latitudeStr || !longitudeStr) {
-                showError('Please enter valid latitude and longitude coordinates.');
-                return;
+        function addMarker(lat, lon, locationNum) {
+            // Remove existing marker if present
+            if (markers[locationNum]) {
+                map.removeLayer(markers[locationNum]);
             }
 
-            let latitude, longitude;
-            
-            try {
-                latitude = parseCoordinate(latitudeStr, false);
-                longitude = parseCoordinate(longitudeStr, true);
-            } catch (error) {
-                showError(error.message);
-                return;
-            }
+            // Create marker
+            const marker = L.marker([lat, lon], {
+                title: `Location ${locationNum}`
+            }).addTo(map);
 
-            showLoading();
+            marker.bindPopup(`<b>Location ${locationNum}</b><br>
+                Lat: ${lat.toFixed(4)}°<br>
+                Lon: ${lon.toFixed(4)}°`);
 
-            try {
-                // Fetch both wind and boundary layer data
-                const [windResponse, boundaryResponse] = await Promise.all([
-                    fetchAromeData(latitude, longitude, date, timezone),
-                    fetchBoundaryLayerData(latitude, longitude, date, timezone)
-                ]);
+            markers[locationNum] = marker;
+            selectedLocations[locationNum] = { lat, lon };
 
-                windData = windResponse;
-                boundaryLayerData = boundaryResponse;
-                
-                processAndDisplayData();
-                showResults();
-
-            } catch (error) {
-                console.error('Error fetching data:', error);
-                showError(`Error fetching wind data: ${error.message}`);
-            }
+            // Update coordinate inputs
+            updateLocationCard(locationNum, lat, lon);
+            updateFetchButton();
+            updateTableVisibility();
         }
 
-        async function fetchAromeData(latitude, longitude, date, timezone) {
-            // Build hourly parameters for all levels
-            const hourlyParams = [];
-            pressureLevels.forEach(level => {
-                hourlyParams.push(level.param);
-                hourlyParams.push(level.dir_param);
-            });
-            hourlyParams.push('wind_gusts_10m');
+        function updateLocationCard(locationNum, lat, lon) {
+            const latDMS = decimalToDMS(lat, false);
+            const lonDMS = decimalToDMS(lon, true);
 
-            const baseUrl = 'https://api.open-meteo.com/v1/meteofrance';
-            const params = [
-                `latitude=${latitude}`,
-                `longitude=${longitude}`,
-                `hourly=${hourlyParams.join(',')}`,
-                `timezone=${timezone}`,
-                `start_date=${date}`,
-                `end_date=${date}`,
-                `windspeed_unit=kmh`,
-                `format=json`
-            ];
-            
-            const url = `${baseUrl}?${params.join('&')}`;
-            console.log('Fetching AROME data:', url);
+            // Set the DMS values in the input fields
+            document.getElementById(`lat-${locationNum}`).value = latDMS;
+            document.getElementById(`lon-${locationNum}`).value = lonDMS;
 
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`AROME API Error: ${response.status}`);
-            }
+            // Update status
+            const statusEl = document.getElementById(`location-${locationNum}-status`);
+            statusEl.textContent = 'Selected';
+            statusEl.className = 'coordinate-status selected';
 
-            const data = await response.json();
-            if (data.error) {
-                throw new Error(`AROME API error: ${data.reason}`);
-            }
+            // Show clear button
+            const clearBtn = document.querySelector(`#location-${locationNum}-card .clear-location-btn`);
+            if (clearBtn) clearBtn.classList.add('show');
 
-            return data;
+            // Mark card as active
+            const card = document.getElementById(`location-${locationNum}-card`);
+            if (card) card.classList.add('active');
         }
 
-        async function fetchBoundaryLayerData(latitude, longitude, date, timezone) {
-            const url = `https://api.open-meteo.com/v1/gfs?` +
-                `latitude=${latitude}&longitude=${longitude}` +
-                `&hourly=boundary_layer_height` +
-                `&timezone=${timezone}&start_date=${date}&end_date=${date}`;
+        function clearLocation(locationNum) {
+            // Remove marker from map
+            if (markers[locationNum]) {
+                map.removeLayer(markers[locationNum]);
+                delete markers[locationNum];
+            }
 
-            try {
-                const response = await fetch(url);
-                if (!response.ok) {
-                    console.warn('GFS API not available, boundary layer data skipped');
-                    return null;
+            // Remove from selected locations
+            delete selectedLocations[locationNum];
+
+            // Clear inputs
+            document.getElementById(`lat-${locationNum}`).value = '';
+            document.getElementById(`lon-${locationNum}`).value = '';
+
+            // Update status
+            const statusEl = document.getElementById(`location-${locationNum}-status`);
+            statusEl.textContent = 'Not Selected';
+            statusEl.className = 'coordinate-status empty';
+
+            // Hide clear button
+            const clearBtn = document.querySelector(`#location-${locationNum}-card .clear-location-btn`);
+            clearBtn.classList.remove('show');
+
+            // Remove active class
+            document.getElementById(`location-${locationNum}-card`).classList.remove('active');
+
+            // Clear wind data
+            delete windData[locationNum];
+            delete pressureLevelData[locationNum];
+            delete boundaryLayerData[locationNum];
+
+            updateFetchButton();
+            updateTableVisibility();
+        }
+
+        function updateTableVisibility() {
+            for (let i = 1; i <= 3; i++) {
+                const container = document.getElementById(`table-container-${i}`);
+                if (selectedLocations[i]) {
+                    container.style.display = 'block';
+                } else {
+                    container.style.display = 'none';
                 }
-                return await response.json();
-            } catch (error) {
-                console.warn('Could not fetch boundary layer data:', error);
-                return null;
             }
         }
 
-        function processAndDisplayData() {
-            // Update info panel
-            const latDMS = decimalToDMS(windData.latitude, false);
-            const lonDMS = decimalToDMS(windData.longitude, true);
+        function updateFetchButton() {
+            const btn = document.getElementById('fetch-btn');
+            const hasLocations = Object.keys(selectedLocations).length > 0;
             
-            document.getElementById('location-info').textContent = `${latDMS}, ${lonDMS}`;
-            document.getElementById('elevation-info').textContent = `${Math.round(windData.elevation)} m`;
-            
-            const timeData = windData.hourly.time;
-            document.getElementById('data-points').textContent = `${timeData.length} hours`;
-            
-            const startTime = new Date(timeData[0]).toLocaleDateString();
-            const endTime = new Date(timeData[timeData.length - 1]).toLocaleDateString();
-            document.getElementById('time-range').textContent = startTime === endTime ? startTime : `${startTime} - ${endTime}`;
-
-            // Create level selector
-            createLevelSelector();
-            
-            // Populate time selector
-            populateTimeSelector();
-            
-            // Create charts
-            createWindSpeedChart();
-            createWindDirectionChart();
-            createWindBarbsChart();
-            createBoundaryLayerChart();
-            createVerticalProfileChart();
+            btn.disabled = !hasLocations;
+            btn.textContent = hasLocations 
+                ? `🌪️ Analyze Wind Data for ${Object.keys(selectedLocations).length} Location${Object.keys(selectedLocations).length > 1 ? 's' : ''}`
+                : '🌪️ Select at least one location to analyze';
         }
 
         function decimalToDMS(decimal, isLongitude) {
@@ -755,28 +1117,185 @@
             return `${degreesPadded} ${minutes.toFixed(1)}${direction}`;
         }
 
-        function createLevelSelector() {
-            const selector = document.getElementById('level-selector');
-            selector.innerHTML = '';
-            
-            // Select all levels by default
-            selectedLevels.clear();
-            pressureLevels.forEach(level => selectedLevels.add(level.level));
+        function showLoading() {
+            document.querySelector('.loading').classList.add('show');
+            document.querySelector('.error').classList.remove('show');
+            document.getElementById('results').style.display = 'none';
+            document.querySelector('.fetch-btn').disabled = true;
+        }
 
-            pressureLevels.forEach(level => {
-                const btn = document.createElement('button');
-                btn.className = 'level-btn active';
-                btn.textContent = level.level;
-                btn.onclick = () => toggleLevel(level.level, btn);
-                selector.appendChild(btn);
-            });
+        function hideLoading() {
+            document.querySelector('.loading').classList.remove('show');
+            document.querySelector('.fetch-btn').disabled = false;
+            updateFetchButton();
+        }
+
+        function showError(message) {
+            document.getElementById('error-message').textContent = message;
+            document.querySelector('.error').classList.add('show');
+            hideLoading();
+        }
+
+        function showResults() {
+            document.getElementById('results').style.display = 'block';
+            hideLoading();
+        }
+
+        function kmhToKnots(kmh) {
+            return kmh * 0.539957;
+        }
+
+        function getWindSpeedColorClass(speedKnots) {
+            if (speedKnots < 5) return 'wind-speed-under-5';
+            if (speedKnots < 10) return 'wind-speed-5-10';
+            if (speedKnots < 15) return 'wind-speed-10-15';
+            if (speedKnots < 20) return 'wind-speed-15-20';
+            if (speedKnots < 25) return 'wind-speed-20-25';
+            if (speedKnots < 30) return 'wind-speed-25-30';
+            if (speedKnots < 35) return 'wind-speed-30-35';
+            return 'wind-speed-over-35';
+        }
+
+        async function fetchAllLocationsData() {
+            showLoading();
+            windData = {};
+            pressureLevelData = {};
+            boundaryLayerData = {};
+
+            const date = document.getElementById('date').value;
+            const timezone = document.getElementById('timezone').value;
+
+            try {
+                // Fetch data for all selected locations
+                const fetchPromises = Object.entries(selectedLocations).map(async ([locationNum, coords]) => {
+                    // Fetch wind, pressure level, and boundary layer data
+                    const [windResult, pressureResult, boundaryResult] = await Promise.all([
+                        fetchLocationWindData(coords.lat, coords.lon, date, timezone),
+                        fetchPressureLevelData(coords.lat, coords.lon, date, timezone),
+                        fetchBoundaryLayerData(coords.lat, coords.lon, date, timezone)
+                    ]);
+                    
+                    windData[locationNum] = {
+                        ...windResult,
+                        locationNum,
+                        coords
+                    };
+
+                    pressureLevelData[locationNum] = {
+                        ...pressureResult,
+                        locationNum,
+                        coords
+                    };
+                    
+                    boundaryLayerData[locationNum] = {
+                        ...boundaryResult,
+                        locationNum,
+                        coords
+                    };
+                });
+
+                await Promise.all(fetchPromises);
+                
+                // Generate tables for each location
+                generateWindTables();
+                
+                // Populate time selector
+                populateTimeSelector();
+                
+                displayComparison();
+                showResults();
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                showError(`Error fetching wind data: ${error.message}`);
+            }
+        }
+
+        async function fetchLocationWindData(latitude, longitude, date, timezone) {
+            // Wind parameters for comprehensive analysis
+            const windParams = [
+                'wind_speed_10m', 'wind_direction_10m',
+                'wind_speed_20m', 'wind_direction_20m', 
+                'wind_speed_50m', 'wind_direction_50m',
+                'wind_speed_100m', 'wind_direction_100m',
+                'wind_speed_150m', 'wind_direction_150m',
+                'wind_speed_200m', 'wind_direction_200m'
+            ];
+
+            const url = `https://api.open-meteo.com/v1/meteofrance?` +
+                `latitude=${latitude}&longitude=${longitude}` +
+                `&hourly=${windParams.join(',')}` +
+                `&wind_speed_unit=kmh&timezone=${timezone}&forecast_days=2` +
+                `&models=meteofrance_arome_france_hd`;
+
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                // Fallback to general forecast API
+                const fallbackUrl = `https://api.open-meteo.com/v1/forecast?` +
+                    `latitude=${latitude}&longitude=${longitude}` +
+                    `&hourly=${windParams.join(',')}` +
+                    `&wind_speed_unit=kmh&timezone=${timezone}&forecast_days=2`;
+                
+                const fallbackResponse = await fetch(fallbackUrl);
+                if (!fallbackResponse.ok) {
+                    throw new Error(`API Error: ${fallbackResponse.status}`);
+                }
+                return await fallbackResponse.json();
+            }
+
+            return await response.json();
+        }
+
+        async function fetchPressureLevelData(latitude, longitude, date, timezone) {
+            // GFS model for pressure level wind data
+            const pressureParams = [
+                'wind_speed_925hPa', 'wind_direction_925hPa',
+                'wind_speed_900hPa', 'wind_direction_900hPa',
+                'wind_speed_850hPa', 'wind_direction_850hPa'
+            ];
+
+            const url = `https://api.open-meteo.com/v1/gfs?` +
+                `latitude=${latitude}&longitude=${longitude}` +
+                `&hourly=${pressureParams.join(',')}` +
+                `&wind_speed_unit=kmh&timezone=${timezone}&forecast_days=2`;
+
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                console.warn(`GFS Pressure Level API Error: ${response.status}. Pressure level data not available.`);
+                return { hourly: { time: [] } };
+            }
+
+            return await response.json();
+        }
+
+        async function fetchBoundaryLayerData(latitude, longitude, date, timezone) {
+            // GFS model for boundary layer height
+            const url = `https://api.open-meteo.com/v1/gfs?` +
+                `latitude=${latitude}&longitude=${longitude}` +
+                `&hourly=boundary_layer_height` +
+                `&timezone=${timezone}&forecast_days=2`;
+
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                console.warn(`GFS API Error: ${response.status}. Boundary layer data not available.`);
+                return { hourly: { time: [], boundary_layer_height: [] } };
+            }
+
+            return await response.json();
         }
 
         function populateTimeSelector() {
             const selector = document.getElementById('profile-time-select');
             selector.innerHTML = '';
             
-            windData.hourly.time.forEach((timeStr, index) => {
+            // Get times from the first available location
+            const firstLocationData = Object.values(windData)[0];
+            if (!firstLocationData || !firstLocationData.hourly.time) return;
+            
+            firstLocationData.hourly.time.forEach((timeStr, index) => {
                 const date = new Date(timeStr);
                 const option = document.createElement('option');
                 option.value = index;
@@ -797,303 +1316,415 @@
         function updateVerticalProfile() {
             const selector = document.getElementById('profile-time-select');
             selectedVerticalProfileTimeIndex = parseInt(selector.value);
-            createVerticalProfileChart();
+            createWindProfileChart();
         }
 
-        function toggleLevel(level, btn) {
-            if (selectedLevels.has(level)) {
-                selectedLevels.delete(level);
-                btn.classList.remove('active');
-            } else {
-                selectedLevels.add(level);
-                btn.classList.add('active');
-            }
-            createWindSpeedChart();
-        }
-
-        function createWindSpeedChart() {
-            const times = windData.hourly.time.map(t => new Date(t));
-            const traces = [];
-
-            pressureLevels.forEach(level => {
-                if (!selectedLevels.has(level.level)) return;
-                
-                const speeds = windData.hourly[level.param];
-                if (!speeds || speeds.every(s => s === null || s === undefined)) return;
-
-                // Convert km/h to knots
-                const speedsInKnots = speeds.map(s => s !== null && s !== undefined ? kmhToKnots(s) : null);
-
-                traces.push({
-                    x: times,
-                    y: speedsInKnots,
-                    type: 'scatter',
-                    mode: 'lines+markers',
-                    name: level.level,
-                    line: { color: level.color, width: 2 },
-                    marker: { size: 4 }
-                });
+        function generateWindTables() {
+            Object.entries(windData).forEach(([locationNum, data]) => {
+                createWindTable(locationNum, data);
             });
-
-            if (traces.length === 0) {
-                document.getElementById('windSpeedChart').innerHTML = 
-                    '<div style="text-align: center; padding: 50px; color: #7f8c8d;">No wind speed data available for selected levels</div>';
-                return;
-            }
-
-            const layout = {
-                title: 'Wind Speed vs Time',
-                xaxis: { 
-                    title: 'Time',
-                    type: 'date'
-                },
-                yaxis: { 
-                    title: 'Wind Speed (knots)',
-                    rangemode: 'tozero'
-                },
-                hovermode: 'x unified',
-                legend: {
-                    orientation: 'h',
-                    y: -0.2
-                },
-                margin: { t: 40, b: 80 }
-            };
-
-            Plotly.newPlot('windSpeedChart', traces, layout, { responsive: true });
         }
 
-        function createWindDirectionChart() {
-            const times = windData.hourly.time.map(t => new Date(t));
-            const traces = [];
-
-            pressureLevels.forEach(level => {
-                const directions = windData.hourly[level.dir_param];
-                if (!directions || directions.every(d => d === null || d === undefined)) return;
-
-                traces.push({
-                    x: times,
-                    y: directions,
-                    type: 'scatter',
-                    mode: 'markers',
-                    name: level.level,
-                    marker: { 
-                        color: level.color, 
-                        size: 6,
-                        symbol: 'arrow-up',
-                        angleref: 'previous',
-                        angle: directions.map(d => d !== null && d !== undefined ? d + 180 : null)
-                    }
-                });
-            });
-
-            if (traces.length === 0) {
-                document.getElementById('windDirectionChart').innerHTML = 
-                    '<div style="text-align: center; padding: 50px; color: #7f8c8d;">No wind direction data available</div>';
-                return;
-            }
-
-            const layout = {
-                title: 'Wind Direction vs Time',
-                xaxis: { 
-                    title: 'Time',
-                    type: 'date'
-                },
-                yaxis: { 
-                    title: 'Wind Direction (degrees)',
-                    range: [0, 360],
-                    tickvals: [0, 90, 180, 270, 360],
-                    ticktext: ['N (0°)', 'E (90°)', 'S (180°)', 'W (270°)', 'N (360°)']
-                },
-                hovermode: 'x unified',
-                legend: {
-                    orientation: 'h',
-                    y: -0.2
-                },
-                margin: { t: 40, b: 80 }
-            };
-
-            Plotly.newPlot('windDirectionChart', traces, layout, { responsive: true });
-        }
-
-        function createWindBarbsChart() {
-            const times = windData.hourly.time.map(t => new Date(t));
-            const traces = [];
-
-            // Create wind barbs for each hour at 10m level
-            const speeds10m = windData.hourly['wind_speed_10m'];
-            const directions10m = windData.hourly['wind_direction_10m'];
+        function createWindTable(locationNum, data) {
+            const tableContainer = document.getElementById(`wind-table-${locationNum}`);
             
-            if (speeds10m && directions10m) {
-                const barbData = times.map((time, i) => {
-                    if (speeds10m[i] === null || directions10m[i] === null) return null;
-                    
-                    const speedKnots = kmhToKnots(speeds10m[i]);
-                    const dirRad = (directions10m[i] + 180) * Math.PI / 180;
-                    
-                    const length = Math.min(speedKnots / 50, 1);
-                    const dx = Math.sin(dirRad) * length;
-                    const dy = Math.cos(dirRad) * length;
-                    
-                    return {
-                        time: time,
-                        speed: speedKnots,
-                        direction: directions10m[i],
-                        dx: dx,
-                        dy: dy
-                    };
-                }).filter(d => d !== null);
-
-                traces.push({
-                    x: barbData.map(d => d.time),
-                    y: Array(barbData.length).fill(10),
-                    mode: 'markers',
-                    marker: {
-                        symbol: 'arrow-up',
-                        size: barbData.map(d => Math.max(8, d.speed / 5)),
-                        color: barbData.map(d => d.speed),
-                        colorscale: 'Viridis',
-                        showscale: true,
-                        colorbar: {
-                            title: 'Wind Speed (knots)',
-                            x: 1.02
-                        },
-                        angle: barbData.map(d => d.direction + 180),
-                        angleref: 'previous'
-                    },
-                    text: barbData.map(d => 
-                        `Time: ${d.time.toLocaleTimeString()}<br>` +
-                        `Speed: ${d.speed.toFixed(1)} knots<br>` +
-                        `Direction: ${d.direction.toFixed(0)}°`
-                    ),
-                    hovertemplate: '%{text}<extra></extra>',
-                    name: 'Wind Barbs (10m)'
-                });
-            }
-
-            const layout = {
-                title: 'Wind Barbs - 10m Level',
-                xaxis: { 
-                    title: 'Time',
-                    type: 'date'
-                },
-                yaxis: { 
-                    title: 'Height',
-                    range: [5, 15],
-                    showticklabels: false
-                },
-                showlegend: false,
-                margin: { t: 40, b: 80, r: 80 }
-            };
-
-            Plotly.newPlot('windBarbsChart', traces, layout, { responsive: true });
-        }
-
-        function createBoundaryLayerChart() {
-            if (!boundaryLayerData || !boundaryLayerData.hourly || !boundaryLayerData.hourly.boundary_layer_height) {
-                document.getElementById('boundaryLayerChart').innerHTML = 
-                    '<div style="text-align: center; padding: 50px; color: #7f8c8d;">Boundary layer data not available</div>';
-                return;
-            }
-
-            const times = boundaryLayerData.hourly.time.map(t => new Date(t));
-            const heights = boundaryLayerData.hourly.boundary_layer_height;
-
-            const trace = {
-                x: times,
-                y: heights,
-                type: 'scatter',
-                mode: 'lines+markers',
-                name: 'Boundary Layer Height',
-                line: { color: '#e74c3c', width: 3 },
-                marker: { size: 6 }
-            };
-
-            const layout = {
-                title: 'Boundary Layer Height (GFS Model)',
-                xaxis: { 
-                    title: 'Time',
-                    type: 'date'
-                },
-                yaxis: { 
-                    title: 'Height (meters)',
-                    rangemode: 'tozero'
-                },
-                margin: { t: 40, b: 80 }
-            };
-
-            Plotly.newPlot('boundaryLayerChart', [trace], layout, { responsive: true });
-        }
-
-        function createVerticalProfileChart() {
-            // Take the selected time point for vertical profile
-            const profileData = [];
-
-            pressureLevels.forEach(level => {
-                const speed = windData.hourly[level.param]?.[selectedVerticalProfileTimeIndex];
-                const direction = windData.hourly[level.dir_param]?.[selectedVerticalProfileTimeIndex];
-
-                if (speed !== null && direction !== null) {
-                    profileData.push({
-                        level: level.level,
-                        altitude: level.altitude,
-                        speed: kmhToKnots(speed),
-                        direction: direction,
-                        color: level.color
+            // Extract 08:00 to 18:00 data
+            const hourlyData = [];
+            
+            data.hourly.time.forEach((timeStr, index) => {
+                const date = new Date(timeStr);
+                const hour = date.getHours();
+                
+                // Only include hours from 08:00 to 18:00
+                if (hour >= 8 && hour <= 18) {
+                    hourlyData.push({
+                        time: date,
+                        timeString: date.toLocaleTimeString('en-GB', { 
+                            hour: '2-digit', 
+                            minute: '2-digit',
+                            timeZone: 'UTC'
+                        }),
+                        windDir20m: data.hourly.wind_direction_20m?.[index] || '--',
+                        windSpeed10m: data.hourly.wind_speed_10m?.[index] || '--',
+                        windSpeed20m: data.hourly.wind_speed_20m?.[index] || '--',
+                        windSpeed50m: data.hourly.wind_speed_50m?.[index] || '--'
                     });
                 }
             });
 
-            if (profileData.length === 0) {
-                document.getElementById('verticalProfileChart').innerHTML = 
-                    '<div style="text-align: center; padding: 50px; color: #7f8c8d;">No vertical profile data available</div>';
+            if (hourlyData.length === 0) {
+                tableContainer.innerHTML = `
+                    <div class="placeholder-table">
+                        <div class="placeholder-table-icon">❌</div>
+                        <div class="placeholder-table-text">No Data Available</div>
+                        <div class="placeholder-table-subtext">No hourly data found for 08:00-18:00 period</div>
+                    </div>
+                `;
                 return;
             }
 
-            const trace = {
-                x: profileData.map(d => d.speed),
-                y: profileData.map(d => d.altitude),
-                type: 'scatter',
-                mode: 'lines+markers',
-                line: { color: '#3498db', width: 3 },
-                marker: {
-                    size: 8,
-                    color: profileData.map(d => d.speed),
-                    colorscale: 'Viridis',
-                    showscale: true,
-                    colorbar: {
-                        title: 'Wind Speed (knots)',
-                        x: 1.02
-                    }
-                },
-                text: profileData.map(d => 
-                    `Level: ${d.level}<br>` +
-                    `Altitude: ${d.altitude} m<br>` +
-                    `Speed: ${d.speed.toFixed(1)} knots<br>` +
-                    `Direction: ${d.direction.toFixed(0)}°`
-                ),
-                hovertemplate: '%{text}<extra></extra>',
-                name: 'Wind Profile'
+            // Create table HTML
+            let tableHTML = `
+                <table class="wind-table">
+                    <thead>
+                        <tr>
+                            <th>Time (UTC)</th>
+                            <th>Wind Dir<br>20m (°)</th>
+                            <th>Wind Speed<br>10m (kt)</th>
+                            <th>Wind Speed<br>20m (kt)</th>
+                            <th>Wind Speed<br>50m (kt)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            hourlyData.forEach(row => {
+                const windSpeed10m = row.windSpeed10m !== '--' ? kmhToKnots(row.windSpeed10m) : null;
+                const windSpeed20m = row.windSpeed20m !== '--' ? kmhToKnots(row.windSpeed20m) : null;
+                const windSpeed50m = row.windSpeed50m !== '--' ? kmhToKnots(row.windSpeed50m) : null;
+                const windDir = row.windDir20m !== '--' ? Math.round(row.windDir20m).toString().padStart(3, '0') : '--';
+
+                // Format speeds and get color classes
+                const speed10mText = windSpeed10m !== null ? windSpeed10m.toFixed(1) : '--';
+                const speed20mText = windSpeed20m !== null ? windSpeed20m.toFixed(1) : '--';
+                const speed50mText = windSpeed50m !== null ? windSpeed50m.toFixed(1) : '--';
+
+                const speed10mClass = windSpeed10m !== null ? getWindSpeedColorClass(windSpeed10m) : '';
+                const speed20mClass = windSpeed20m !== null ? getWindSpeedColorClass(windSpeed20m) : '';
+                const speed50mClass = windSpeed50m !== null ? getWindSpeedColorClass(windSpeed50m) : '';
+
+                tableHTML += `
+                    <tr>
+                        <td class="time-cell">${row.timeString}</td>
+                        <td>${windDir}</td>
+                        <td class="${speed10mClass}">${speed10mText}</td>
+                        <td class="${speed20mClass}">${speed20mText}</td>
+                        <td class="${speed50mClass}">${speed50mText}</td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += `
+                    </tbody>
+                </table>
+            `;
+
+            tableContainer.innerHTML = tableHTML;
+        }
+
+        function displayComparison() {
+            createLocationSummaries();
+            createWindComparisonChart();
+            createBoundaryLayerChart();
+            createWindProfileChart();
+        }
+
+        function createLocationSummaries() {
+            const grid = document.getElementById('comparison-grid');
+            grid.innerHTML = '';
+
+            const locationNames = {
+                1: '🔴 Location 1',
+                2: '🟢 Location 2',
+                3: '🟠 Location 3'
             };
 
-            const selectedTime = new Date(windData.hourly.time[selectedVerticalProfileTimeIndex]);
+            Object.entries(windData).forEach(([locationNum, data]) => {
+                const coords = data.coords;
+                const wind10m = data.hourly.wind_speed_10m || [];
+                const validWindSpeeds = wind10m.filter(s => s !== null && s !== undefined);
+
+                if (validWindSpeeds.length === 0) return;
+
+                const avgWind = validWindSpeeds.reduce((a, b) => a + b, 0) / validWindSpeeds.length;
+                const maxWind = Math.max(...validWindSpeeds);
+                const minWind = Math.min(...validWindSpeeds);
+
+                const summaryEl = document.createElement('div');
+                summaryEl.className = `location-summary location-${locationNum}`;
+                summaryEl.innerHTML = `
+                    <div class="location-title">${locationNames[locationNum]}</div>
+                    <div class="location-coords">${decimalToDMS(coords.lat, false)}, ${decimalToDMS(coords.lon, true)}</div>
+                    <div class="wind-stats">
+                        <div class="wind-stat">
+                            <div class="wind-stat-label">Avg Wind</div>
+                            <div class="wind-stat-value">${kmhToKnots(avgWind).toFixed(1)} kt</div>
+                        </div>
+                        <div class="wind-stat">
+                            <div class="wind-stat-label">Max Wind</div>
+                            <div class="wind-stat-value">${kmhToKnots(maxWind).toFixed(1)} kt</div>
+                        </div>
+                        <div class="wind-stat">
+                            <div class="wind-stat-label">Min Wind</div>
+                            <div class="wind-stat-value">${kmhToKnots(minWind).toFixed(1)} kt</div>
+                        </div>
+                        <div class="wind-stat">
+                            <div class="wind-stat-label">Elevation</div>
+                            <div class="wind-stat-value">${Math.round(data.elevation || 0)} m</div>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(summaryEl);
+            });
+        }
+
+        function createWindComparisonChart() {
+            const traces = [];
+            const colors = {
+                1: '#e74c3c',
+                2: '#27ae60',
+                3: '#f39c12'
+            };
+
+            const locationNames = {
+                1: '🔴 Location 1',
+                2: '🟢 Location 2', 
+                3: '🟠 Location 3'
+            };
+
+            Object.entries(windData).forEach(([locationNum, data]) => {
+                const times = data.hourly.time.map(t => new Date(t));
+                const speeds10m = data.hourly.wind_speed_10m;
+                const speeds50m = data.hourly.wind_speed_50m;
+
+                if (speeds10m) {
+                    traces.push({
+                        x: times,
+                        y: speeds10m.map(s => s !== null ? kmhToKnots(s) : null),
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        name: `${locationNames[locationNum]} (10m)`,
+                        line: { color: colors[locationNum], width: 3 },
+                        marker: { size: 6 },
+                        connectgaps: true
+                    });
+                }
+
+                if (speeds50m) {
+                    traces.push({
+                        x: times,
+                        y: speeds50m.map(s => s !== null ? kmhToKnots(s) : null),
+                        type: 'scatter',
+                        mode: 'lines',
+                        name: `${locationNames[locationNum]} (50m)`,
+                        line: { color: colors[locationNum], width: 2, dash: 'dash' },
+                        connectgaps: true
+                    });
+                }
+            });
 
             const layout = {
-                title: `Vertical Wind Profile - ${selectedTime.toLocaleString()}`,
+                title: 'Wind Speed Comparison Over Time',
+                xaxis: { title: 'Time', type: 'date' },
+                yaxis: { title: 'Wind Speed (knots)', rangemode: 'tozero' },
+                hovermode: 'x unified',
+                legend: { orientation: 'h', y: -0.15 },
+                margin: { t: 40, b: 100 }
+            };
+
+            Plotly.newPlot('windComparisonChart', traces, layout, { responsive: true });
+        }
+
+        function createBoundaryLayerChart() {
+            const traces = [];
+            const colors = {
+                1: '#e74c3c',
+                2: '#27ae60',
+                3: '#f39c12'
+            };
+
+            const locationNames = {
+                1: '🔴 Location 1',
+                2: '🟢 Location 2',
+                3: '🟠 Location 3'
+            };
+
+            Object.entries(boundaryLayerData).forEach(([locationNum, data]) => {
+                if (!data.hourly || !data.hourly.boundary_layer_height) return;
+
+                const times = data.hourly.time.map(t => new Date(t));
+                const heights = data.hourly.boundary_layer_height;
+
+                traces.push({
+                    x: times,
+                    y: heights,
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    name: locationNames[locationNum],
+                    line: { color: colors[locationNum], width: 3 },
+                    marker: { size: 6 },
+                    connectgaps: true
+                });
+            });
+
+            if (traces.length === 0) {
+                document.getElementById('boundaryLayerChart').innerHTML = `
+                    <div class="placeholder-content">
+                        <div class="placeholder-icon">❌</div>
+                        <div class="placeholder-text">Boundary Layer Data Unavailable</div>
+                        <div class="placeholder-subtext">GFS model data could not be retrieved for the selected locations</div>
+                    </div>
+                `;
+                return;
+            }
+
+            const layout = {
+                title: 'Boundary Layer Height (GFS Model)',
+                xaxis: { title: 'Time', type: 'date' },
+                yaxis: { title: 'Boundary Layer Height (meters)', rangemode: 'tozero' },
+                hovermode: 'x unified',
+                legend: { orientation: 'h', y: -0.15 },
+                margin: { t: 40, b: 100 }
+            };
+
+            Plotly.newPlot('boundaryLayerChart', traces, layout, { responsive: true });
+        }
+
+        function createWindProfileChart() {
+            const traces = [];
+            const colors = {
+                1: '#e74c3c',
+                2: '#27ae60',
+                3: '#f39c12'
+            };
+
+            const locationNames = {
+                1: '🔴 Location 1',
+                2: '🟢 Location 2',
+                3: '🟠 Location 3'
+            };
+
+            // Define wind levels including pressure levels
+            const windLevels = [
+                { name: '10m', param: 'wind_speed_10m', altitude: 10, source: 'surface' },
+                { name: '20m', param: 'wind_speed_20m', altitude: 20, source: 'surface' },
+                { name: '50m', param: 'wind_speed_50m', altitude: 50, source: 'surface' },
+                { name: '100m', param: 'wind_speed_100m', altitude: 100, source: 'surface' },
+                { name: '150m', param: 'wind_speed_150m', altitude: 150, source: 'surface' },
+                { name: '200m', param: 'wind_speed_200m', altitude: 200, source: 'surface' },
+                { name: '925hPa', param: 'wind_speed_925hPa', altitude: pressureToAltitude(925), source: 'pressure' },
+                { name: '900hPa', param: 'wind_speed_900hPa', altitude: pressureToAltitude(900), source: 'pressure' },
+                { name: '850hPa', param: 'wind_speed_850hPa', altitude: pressureToAltitude(850), source: 'pressure' }
+            ];
+
+            Object.entries(windData).forEach(([locationNum, data]) => {
+                const profileData = [];
+                
+                // Get surface level data
+                windLevels.forEach(level => {
+                    if (level.source === 'surface') {
+                        const speed = data.hourly[level.param]?.[selectedVerticalProfileTimeIndex];
+                        if (speed !== null && speed !== undefined) {
+                            profileData.push({
+                                name: level.name,
+                                altitude: Math.max(level.altitude, 1),
+                                speed: kmhToKnots(speed),
+                                source: 'AROME'
+                            });
+                        }
+                    }
+                });
+
+                // Get pressure level data from separate dataset
+                if (pressureLevelData[locationNum] && pressureLevelData[locationNum].hourly) {
+                    windLevels.forEach(level => {
+                        if (level.source === 'pressure') {
+                            const speed = pressureLevelData[locationNum].hourly[level.param]?.[selectedVerticalProfileTimeIndex];
+                            if (speed !== null && speed !== undefined) {
+                                profileData.push({
+                                    name: level.name,
+                                    altitude: Math.max(level.altitude, 1),
+                                    speed: kmhToKnots(speed),
+                                    source: 'GFS'
+                                });
+                            }
+                        }
+                    });
+                }
+
+                if (profileData.length > 0) {
+                    profileData.sort((a, b) => a.altitude - b.altitude);
+
+                    traces.push({
+                        x: profileData.map(d => d.speed),
+                        y: profileData.map(d => d.altitude),
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        name: locationNames[locationNum],
+                        line: { color: colors[locationNum], width: 3 },
+                        marker: { size: 8, color: colors[locationNum] },
+                        text: profileData.map(d => 
+                            `<b>${locationNames[locationNum]}</b><br>` +
+                            `Level: ${d.name}<br>` +
+                            `Altitude: ${Math.round(d.altitude)} m<br>` +
+                            `Speed: ${d.speed.toFixed(1)} knots<br>` +
+                            `Source: ${d.source}`
+                        ),
+                        hovertemplate: '%{text}<extra></extra>'
+                    });
+                }
+            });
+
+            // Get selected time for title
+            const firstLocationData = Object.values(windData)[0];
+            const selectedTime = firstLocationData ? 
+                new Date(firstLocationData.hourly.time[selectedVerticalProfileTimeIndex]) : new Date();
+
+            const layout = {
+                title: `Vertical Wind Profile with Pressure Levels - ${selectedTime.toLocaleString('en-GB', { timeZone: 'UTC' })} UTC`,
                 xaxis: { 
-                    title: 'Wind Speed (knots)',
-                    rangemode: 'tozero'
+                    title: 'Wind Speed (knots)', 
+                    rangemode: 'tozero',
+                    gridcolor: 'rgba(200, 200, 200, 0.3)'
                 },
                 yaxis: { 
                     title: 'Altitude (meters)',
                     type: 'log',
-                    rangemode: 'tozero'
+                    rangemode: 'tozero',
+                    gridcolor: 'rgba(200, 200, 200, 0.3)',
+                    tickformat: '.0f'
                 },
-                showlegend: false,
-                margin: { t: 40, b: 80, r: 80 }
+                hovermode: 'closest',
+                legend: { x: 0.7, y: 0.95 },
+                margin: { t: 60, b: 60, l: 80, r: 20 },
+                plot_bgcolor: 'rgba(248, 249, 250, 0.8)',
+                annotations: [
+                    {
+                        x: 0.02,
+                        y: 0.98,
+                        xref: 'paper',
+                        yref: 'paper',
+                        text: 'Surface levels: AROME model<br>Pressure levels: GFS model',
+                        showarrow: false,
+                        font: { size: 10, color: '#7f8c8d' },
+                        align: 'left',
+                        bgcolor: 'rgba(255, 255, 255, 0.8)',
+                        bordercolor: '#ddd',
+                        borderwidth: 1
+                    }
+                ]
             };
 
-            Plotly.newPlot('verticalProfileChart', [trace], layout, { responsive: true });
+            if (traces.length === 0) {
+                document.getElementById('windProfileChart').innerHTML = `
+                    <div class="placeholder-content">
+                        <div class="placeholder-icon">📊</div>
+                        <div class="placeholder-text">No Profile Data Available</div>
+                        <div class="placeholder-subtext">No wind speed data available for vertical profile analysis</div>
+                    </div>
+                `;
+                return;
+            }
+
+            Plotly.newPlot('windProfileChart', traces, layout, { responsive: true });
         }
+
+        // Initialize everything when page loads
+        window.onload = function() {
+            document.getElementById('date').valueAsDate = new Date();
+            initMap();
+            updateTableVisibility();
+        };
     </script>
 </body>
 </html>
