@@ -1499,15 +1499,26 @@
                 3: '🟠 Location 3'
             };
 
-            // Define wind levels
+            // Define wind levels including pressure levels up to 850hPa
             const windLevels = [
                 { name: '10m', param: 'wind_speed_10m', altitude: 10 },
                 { name: '20m', param: 'wind_speed_20m', altitude: 20 },
                 { name: '50m', param: 'wind_speed_50m', altitude: 50 },
                 { name: '100m', param: 'wind_speed_100m', altitude: 100 },
                 { name: '150m', param: 'wind_speed_150m', altitude: 150 },
-                { name: '200m', param: 'wind_speed_200m', altitude: 200 }
+                { name: '200m', param: 'wind_speed_200m', altitude: 200 },
+                // Pressure levels with calculated altitudes
+                { name: '1000hPa', param: 'wind_speed_1000hPa', altitude: Math.round(pressureToAltitude(1000)) },
+                { name: '975hPa', param: 'wind_speed_975hPa', altitude: Math.round(pressureToAltitude(975)) },
+                { name: '950hPa', param: 'wind_speed_950hPa', altitude: Math.round(pressureToAltitude(950)) },
+                { name: '925hPa', param: 'wind_speed_925hPa', altitude: Math.round(pressureToAltitude(925)) },
+                { name: '900hPa', param: 'wind_speed_900hPa', altitude: Math.round(pressureToAltitude(900)) },
+                { name: '875hPa', param: 'wind_speed_875hPa', altitude: Math.round(pressureToAltitude(875)) },
+                { name: '850hPa', param: 'wind_speed_850hPa', altitude: Math.round(pressureToAltitude(850)) }
             ];
+
+            let maxAltitudeInData = 0;
+            let windSpeed10mForProfile = null;
 
             Object.entries(windData).forEach(([locationNum, data]) => {
                 const profileData = [];
@@ -1520,6 +1531,13 @@
                             altitude: Math.max(level.altitude, 1),
                             speed: kmhToKnots(speed)
                         });
+                        
+                        maxAltitudeInData = Math.max(maxAltitudeInData, level.altitude);
+                        
+                        // Store 10m wind speed for logarithmic profile calculation
+                        if (level.name === '10m' && !windSpeed10mForProfile) {
+                            windSpeed10mForProfile = speed;
+                        }
                     }
                 });
 
@@ -1545,13 +1563,40 @@
                 }
             });
 
+            // Add theoretical logarithmic wind profile if we have 10m wind data
+            if (windSpeed10mForProfile !== null && windSpeed10mForProfile > 0) {
+                const logProfile = calculateLogarithmicProfile(windSpeed10mForProfile, maxAltitudeInData * 1.2);
+                
+                if (logProfile.length > 0) {
+                    traces.push({
+                        x: logProfile.map(d => d.speed),
+                        y: logProfile.map(d => d.altitude),
+                        type: 'scatter',
+                        mode: 'lines',
+                        name: '📏 Theoretical Log Profile (Water)',
+                        line: { 
+                            color: '#7f8c8d', 
+                            width: 2, 
+                            dash: 'dash' 
+                        },
+                        text: logProfile.map(d => 
+                            `<b>Theoretical Profile</b><br>` +
+                            `Surface: Water (z₀=0.2mm)<br>` +
+                            `Altitude: ${Math.round(d.altitude)} m<br>` +
+                            `Speed: ${d.speed.toFixed(1)} knots`
+                        ),
+                        hovertemplate: '%{text}<extra></extra>'
+                    });
+                }
+            }
+
             // Get selected time for title
             const firstLocationData = Object.values(windData)[0];
             const selectedTime = firstLocationData ? 
                 new Date(firstLocationData.hourly.time[selectedVerticalProfileTimeIndex]) : new Date();
 
             const layout = {
-                title: `Vertical Wind Profile - ${selectedTime.toLocaleString('en-GB', { timeZone: 'UTC' })} UTC`,
+                title: `Vertical Wind Profile (up to 850hPa) - ${selectedTime.toLocaleString('en-GB', { timeZone: 'UTC' })} UTC`,
                 xaxis: { 
                     title: 'Wind Speed (knots)', 
                     rangemode: 'tozero',
@@ -1565,9 +1610,23 @@
                     tickformat: '.0f'
                 },
                 hovermode: 'closest',
-                legend: { x: 0.7, y: 0.95 },
+                legend: { x: 0.02, y: 0.98 },
                 margin: { t: 60, b: 60, l: 80, r: 20 },
-                plot_bgcolor: 'rgba(248, 249, 250, 0.8)'
+                plot_bgcolor: 'rgba(248, 249, 250, 0.8)',
+                annotations: [{
+                    x: 0.98,
+                    y: 0.02,
+                    xref: 'paper',
+                    yref: 'paper',
+                    text: 'Theoretical profile assumes<br>calm water conditions<br>(roughness z₀ = 0.2mm)',
+                    showarrow: false,
+                    font: { size: 10, color: '#7f8c8d' },
+                    bgcolor: 'rgba(255,255,255,0.8)',
+                    bordercolor: '#ddd',
+                    borderwidth: 1,
+                    xanchor: 'right',
+                    yanchor: 'bottom'
+                }]
             };
 
             if (traces.length === 0) {
