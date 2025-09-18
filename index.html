@@ -643,16 +643,16 @@
 
         <div class="control-section">
             <div style="background: #2ecc71; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                <strong>🌐 AROME + GFS WIND ANALYSIS:</strong> Comprehensive atmospheric analysis using specialized models for optimal data quality.
+                <strong>🌐 HYBRID WIND ANALYSIS:</strong> Combining the best of both high-resolution and global models for comprehensive vertical wind analysis.
                 <br><br>
                 <strong>Data Sources:</strong>
                 <ul style="margin: 10px 0 0 20px;">
-                    <li><strong>AROME Model (Météo-France):</strong> ALL vertical wind data - surface levels + pressure levels up to 750hPa</li>
-                    <li><strong>GFS Model (NOAA):</strong> Planetary boundary layer height ONLY</li>
-                    <li><strong>Wind Data Consistency:</strong> All wind speeds and directions from single AROME model</li>
-                    <li><strong>Coverage:</strong> AROME 1.5km resolution for France/Central Europe</li>
-                    <li><strong>Vertical Range:</strong> Surface (10m) to 750hPa (~2500m altitude) - all AROME</li>
-                    <li><strong>Boundary Layer:</strong> GFS global coverage for mixing height analysis</li>
+                    <li><strong>AROME Model (Météo-France):</strong> High-resolution surface wind data (10m-200m) at 1.5km resolution</li>
+                    <li><strong>GFS Model (NOAA):</strong> Pressure level wind data (1000hPa-750hPa) + planetary boundary layer height</li>
+                    <li><strong>Vertical Coverage:</strong> Complete profile from surface to ~2500m altitude</li>
+                    <li><strong>Surface Resolution:</strong> AROME 1.5km for France/Central Europe</li>
+                    <li><strong>Upper Levels:</strong> GFS 13km global coverage for pressure levels</li>
+                    <li><strong>Why Hybrid:</strong> AROME doesn't provide pressure level wind data - only surface levels</li>
                 </ul>
             </div>
             <div class="control-grid">
@@ -741,7 +741,7 @@
             </div>
 
             <div class="chart-container">
-                <div class="chart-title">📈 Extended Vertical Wind Profile (Log Scale) - Up to 750hPa (~2.5km)</div>
+                <div class="chart-title">📈 Hybrid Vertical Wind Profile - AROME Surface + GFS Pressure Levels</div>
                 <div class="chart-wrapper">
                     <div id="windProfileChart"></div>
                 </div>
@@ -1344,7 +1344,7 @@
                 3: '🟠 Location 3'
             };
 
-            // Define all wind levels including extended pressure levels up to 750hPa for comprehensive vertical profile
+            // Define all wind levels with CORRECTED parameter names to match API response
             const windLevels = [
                 { name: '10m', param: 'wind_speed_10m', altitude: 10 },
                 { name: '20m', param: 'wind_speed_20m', altitude: 20 },
@@ -1352,25 +1352,31 @@
                 { name: '100m', param: 'wind_speed_100m', altitude: 100 },
                 { name: '150m', param: 'wind_speed_150m', altitude: 150 },
                 { name: '200m', param: 'wind_speed_200m', altitude: 200 },
-                { name: '1000hPa', param: 'windspeed_1000hPa', altitude: pressureToAltitude(1000) },
-                { name: '975hPa', param: 'windspeed_975hPa', altitude: pressureToAltitude(975) },
-                { name: '950hPa', param: 'windspeed_950hPa', altitude: pressureToAltitude(950) },
-                { name: '925hPa', param: 'windspeed_925hPa', altitude: pressureToAltitude(925) },
-                { name: '900hPa', param: 'windspeed_900hPa', altitude: pressureToAltitude(900) },
-                { name: '875hPa', param: 'windspeed_875hPa', altitude: pressureToAltitude(875) },
-                { name: '850hPa', param: 'windspeed_850hPa', altitude: pressureToAltitude(850) },
-                { name: '825hPa', param: 'windspeed_825hPa', altitude: pressureToAltitude(825) },
-                { name: '800hPa', param: 'windspeed_800hPa', altitude: pressureToAltitude(800) },
-                { name: '775hPa', param: 'windspeed_775hPa', altitude: pressureToAltitude(775) },
-                { name: '750hPa', param: 'windspeed_750hPa', altitude: pressureToAltitude(750) }
+                { name: '1000hPa', param: 'wind_speed_1000hPa', altitude: pressureToAltitude(1000) },
+                { name: '975hPa', param: 'wind_speed_975hPa', altitude: pressureToAltitude(975) },
+                { name: '950hPa', param: 'wind_speed_950hPa', altitude: pressureToAltitude(950) },
+                { name: '925hPa', param: 'wind_speed_925hPa', altitude: pressureToAltitude(925) },
+                { name: '900hPa', param: 'wind_speed_900hPa', altitude: pressureToAltitude(900) },
+                { name: '875hPa', param: 'wind_speed_875hPa', altitude: pressureToAltitude(875) },
+                { name: '850hPa', param: 'wind_speed_850hPa', altitude: pressureToAltitude(850) },
+                { name: '825hPa', param: 'wind_speed_825hPa', altitude: pressureToAltitude(825) },
+                { name: '800hPa', param: 'wind_speed_800hPa', altitude: pressureToAltitude(800) },
+                { name: '775hPa', param: 'wind_speed_775hPa', altitude: pressureToAltitude(775) },
+                { name: '750hPa', param: 'wind_speed_750hPa', altitude: pressureToAltitude(750) }
             ];
 
             Object.entries(windData).forEach(([locationNum, data]) => {
                 const profileData = [];
                 
+                // Debug: Log available parameters for troubleshooting
+                console.log(`Location ${locationNum} available wind parameters:`, 
+                    Object.keys(data.hourly || {}).filter(key => key.includes('wind_speed')));
+                
                 windLevels.forEach(level => {
                     const speed = data.hourly[level.param]?.[selectedVerticalProfileTimeIndex];
-                    if (speed !== null && speed !== undefined) {
+                    console.log(`Checking ${level.name} (${level.param}): ${speed}`);
+                    
+                    if (speed !== null && speed !== undefined && speed > 0) {
                         profileData.push({
                             name: level.name,
                             altitude: Math.max(level.altitude, 1), // Ensure minimum 1m for log scale
@@ -1378,6 +1384,8 @@
                         });
                     }
                 });
+
+                console.log(`Location ${locationNum} profile data points:`, profileData.length);
 
                 if (profileData.length > 0) {
                     // Sort by altitude
