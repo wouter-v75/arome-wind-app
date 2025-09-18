@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced AROME Wind Analysis with Pressure Levels</title>
+    <title>AROME Wind Analysis with Interactive Map</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.24.1/plotly.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -291,112 +291,6 @@
             display: block;
         }
 
-        /* WIND SPEED COLOR SCALE */
-        .wind-speed-under-5 {
-            background-color: #003f7f !important;
-            color: white !important;
-            font-weight: bold;
-        }
-
-        .wind-speed-5-10 {
-            background-color: #00bfff !important;
-            color: black !important;
-            font-weight: bold;
-        }
-
-        .wind-speed-10-15 {
-            background-color: #00ff00 !important;
-            color: black !important;
-            font-weight: bold;
-        }
-
-        .wind-speed-15-20 {
-            background-color: #ffff00 !important;
-            color: black !important;
-            font-weight: bold;
-        }
-
-        .wind-speed-20-25 {
-            background-color: #ff8c00 !important;
-            color: white !important;
-            font-weight: bold;
-        }
-
-        .wind-speed-25-30 {
-            background-color: #ff0000 !important;
-            color: white !important;
-            font-weight: bold;
-        }
-
-        .wind-speed-30-35 {
-            background-color: #8b4513 !important;
-            color: white !important;
-            font-weight: bold;
-        }
-
-        .wind-speed-over-35 {
-            background-color: #4b0000 !important;
-            color: white !important;
-            font-weight: bold;
-        }
-
-        /* COLOR LEGEND */
-        .wind-speed-legend {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-left: 5px solid #3498db;
-        }
-
-        .legend-title {
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-
-        .legend-items {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-            gap: 5px;
-        }
-
-        .legend-item {
-            text-align: center;
-            padding: 5px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
-
-        /* PRESSURE LEVEL LEGEND */
-        .pressure-level-legend {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-left: 5px solid #9b59b6;
-        }
-
-        .pressure-legend-items {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 8px;
-            margin-top: 10px;
-        }
-
-        .pressure-legend-item {
-            text-align: center;
-            padding: 8px;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            background: #e8f4fd;
-            color: #2c3e50;
-            border: 1px solid #3498db;
-        }
-
         /* HOURLY TABLES */
         .tables-section {
             background: rgba(255, 255, 255, 0.95);
@@ -484,7 +378,7 @@
         }
 
         .wind-table tbody tr:hover {
-            background: rgba(248, 249, 250, 0.8);
+            background: #f8f9fa;
         }
 
         .wind-table .time-cell {
@@ -542,35 +436,6 @@
         .chart-wrapper {
             height: 600px;
             position: relative;
-        }
-
-        .chart-controls {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .time-selector {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .time-selector label {
-            font-weight: 600;
-            color: #2c3e50;
-            font-size: 0.9rem;
-        }
-
-        .time-selector select {
-            padding: 8px 12px;
-            border: 2px solid #e0e6ed;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            background: white;
         }
 
         .locations-comparison {
@@ -696,22 +561,14 @@
             .chart-wrapper {
                 height: 400px;
             }
-
-            .chart-controls {
-                flex-direction: column;
-            }
-
-            .pressure-legend-items {
-                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🌊 Enhanced AROME Wind Analysis</h1>
-            <p>Interactive map-based high-resolution wind forecasts with boundary layer analysis and pressure level wind data</p>
+            <h1>🌊 AROME Wind Analysis</h1>
+            <p>Interactive map-based high-resolution wind forecasts with multi-location comparison and detailed hourly tables</p>
         </div>
 
         <div class="map-selection-section">
@@ -786,14 +643,16 @@
 
         <div class="control-section">
             <div style="background: #2ecc71; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                <strong>🌐 ENHANCED FORECAST SOURCES:</strong> This app now includes pressure level wind data for comprehensive vertical analysis.
+                <strong>🌐 AROME + GFS WIND ANALYSIS:</strong> Comprehensive atmospheric analysis using specialized models for optimal data quality.
                 <br><br>
                 <strong>Data Sources:</strong>
                 <ul style="margin: 10px 0 0 20px;">
-                    <li><strong>AROME Model:</strong> Météo-France 1.5km wind forecasts</li>
-                    <li><strong>GFS Model:</strong> NOAA global model for boundary layer height + pressure levels</li>
-                    <li><strong>Coverage:</strong> Europe-focused with global coverage for pressure levels</li>
-                    <li><strong>Wind Levels:</strong> 10m, 20m, 50m, 100m, 150m, 200m + 975hPa, 950hPa, 925hPa, 900hPa, 850hPa pressure levels</li>
+                    <li><strong>AROME Model (Météo-France):</strong> ALL vertical wind data - surface levels + pressure levels up to 750hPa</li>
+                    <li><strong>GFS Model (NOAA):</strong> Planetary boundary layer height ONLY</li>
+                    <li><strong>Wind Data Consistency:</strong> All wind speeds and directions from single AROME model</li>
+                    <li><strong>Coverage:</strong> AROME 1.5km resolution for France/Central Europe</li>
+                    <li><strong>Vertical Range:</strong> Surface (10m) to 750hPa (~2500m altitude) - all AROME</li>
+                    <li><strong>Boundary Layer:</strong> GFS global coverage for mixing height analysis</li>
                 </ul>
             </div>
             <div class="control-grid">
@@ -819,41 +678,15 @@
 
         <div class="loading">
             <div class="spinner"></div>
-            <div>Fetching AROME + GFS model forecasts including pressure level data...</div>
+            <div>Fetching AROME model forecasts for all selected locations...</div>
         </div>
 
         <div class="error">
             <div id="error-message"></div>
         </div>
 
-        <!-- LEGENDS -->
+        <!-- ALWAYS VISIBLE HOURLY TABLES -->
         <div class="tables-section">
-            <div class="wind-speed-legend">
-                <div class="legend-title">🎨 Wind Speed Color Scale (knots)</div>
-                <div class="legend-items">
-                    <div class="legend-item wind-speed-under-5">&lt;5</div>
-                    <div class="legend-item wind-speed-5-10">5-10</div>
-                    <div class="legend-item wind-speed-10-15">10-15</div>
-                    <div class="legend-item wind-speed-15-20">15-20</div>
-                    <div class="legend-item wind-speed-20-25">20-25</div>
-                    <div class="legend-item wind-speed-25-30">25-30</div>
-                    <div class="legend-item wind-speed-30-35">30-35</div>
-                    <div class="legend-item wind-speed-over-35">&gt;35</div>
-                </div>
-            </div>
-
-            <div class="pressure-level-legend">
-                <div class="legend-title">🏔️ Pressure Level Approximate Altitudes (International Standard Atmosphere)</div>
-                <div class="pressure-legend-items">
-                    <div class="pressure-legend-item">925hPa ≈ 760m</div>
-                    <div class="pressure-legend-item">900hPa ≈ 990m</div>
-                    <div class="pressure-legend-item">850hPa ≈ 1480m</div>
-                </div>
-                <div style="font-size: 0.8rem; margin-top: 8px; color: #7f8c8d; text-align: center;">
-                    * Actual altitudes vary with atmospheric conditions and local pressure
-                </div>
-            </div>
-
             <div class="tables-title">📊 Hourly Wind Tables (08:00 - 18:00 UTC)</div>
             <div class="tables-grid">
                 <div class="table-container location-1" id="table-container-1">
@@ -862,7 +695,7 @@
                         <div class="placeholder-table">
                             <div class="placeholder-table-icon">📋</div>
                             <div class="placeholder-table-text">Location 1 Wind Table</div>
-                            <div class="placeholder-table-subtext">Select locations and fetch data to see color-coded hourly wind forecasts</div>
+                            <div class="placeholder-table-subtext">Select locations and fetch data to see hourly wind forecasts</div>
                         </div>
                     </div>
                 </div>
@@ -908,24 +741,16 @@
             </div>
 
             <div class="chart-container">
-                <div class="chart-title">🏔️ Boundary Layer Height (GFS Model)</div>
+                <div class="chart-title">📈 Extended Vertical Wind Profile (Log Scale) - Up to 750hPa (~2.5km)</div>
                 <div class="chart-wrapper">
-                    <div id="boundaryLayerChart"></div>
+                    <div id="windProfileChart"></div>
                 </div>
             </div>
 
             <div class="chart-container">
-                <div class="chart-title">📈 Vertical Wind Profile Analysis (Including Pressure Levels)</div>
-                <div class="chart-controls">
-                    <div class="time-selector">
-                        <label for="profile-time-select">Select Time:</label>
-                        <select id="profile-time-select" onchange="updateVerticalProfile()">
-                            <!-- Options will be populated dynamically -->
-                        </select>
-                    </div>
-                </div>
+                <div class="chart-title">🌫️ Planetary Boundary Layer Height Analysis (GFS Model)</div>
                 <div class="chart-wrapper">
-                    <div id="windProfileChart"></div>
+                    <div id="boundaryLayerChart"></div>
                 </div>
             </div>
         </div>
@@ -935,29 +760,8 @@
         let map;
         let markers = {};
         let windData = {};
-        let pressureLevelData = {};
-        let boundaryLayerData = {};
         let selectedLocations = {};
-        let selectedVerticalProfileTimeIndex = 0;
-
-        // Pressure to altitude conversion using International Standard Atmosphere
-        function pressureToAltitude(pressureHPa) {
-            // International Standard Atmosphere approximation
-            // P = P0 * (1 - 0.0065 * h / T0)^(g * M / (R * 0.0065))
-            // Rearranged: h = (T0 / 0.0065) * (1 - (P / P0)^((R * 0.0065) / (g * M)))
-            
-            const P0 = 1013.25; // Sea level pressure in hPa
-            const T0 = 288.15;   // Sea level temperature in Kelvin (15°C)
-            const g = 9.80665;   // Acceleration due to gravity
-            const M = 0.0289644; // Molar mass of Earth's air
-            const R = 8.31447;   // Universal gas constant
-            const L = 0.0065;    // Temperature lapse rate
-            
-            const exponent = (R * L) / (g * M);
-            const altitude = (T0 / L) * (1 - Math.pow(pressureHPa / P0, exponent));
-            
-            return Math.max(altitude, 0); // Ensure non-negative altitude
-        }
+        let selectedVerticalProfileTimeIndex = 0; // Default to first hour
 
         // Initialize map
         function initMap() {
@@ -1073,7 +877,6 @@
 
             // Clear wind data
             delete windData[locationNum];
-            delete boundaryLayerData[locationNum];
 
             updateFetchButton();
             updateTableVisibility();
@@ -1116,6 +919,15 @@
             return `${degreesPadded} ${minutes.toFixed(1)}${direction}`;
         }
 
+        // Convert pressure level to approximate altitude in meters
+        function pressureToAltitude(pressure) {
+            // Using standard atmosphere approximation: h = 44330 * (1 - (P/P0)^0.1903)
+            // Where P0 = 1013.25 hPa (sea level pressure)
+            const P0 = 1013.25;
+            const altitude = 44330 * (1 - Math.pow(pressure / P0, 0.1903));
+            return Math.max(altitude, 1); // Ensure minimum 1m for log scale
+        }
+
         function showLoading() {
             document.querySelector('.loading').classList.add('show');
             document.querySelector('.error').classList.remove('show');
@@ -1144,22 +956,9 @@
             return kmh * 0.539957;
         }
 
-        function getWindSpeedColorClass(speedKnots) {
-            if (speedKnots < 5) return 'wind-speed-under-5';
-            if (speedKnots < 10) return 'wind-speed-5-10';
-            if (speedKnots < 15) return 'wind-speed-10-15';
-            if (speedKnots < 20) return 'wind-speed-15-20';
-            if (speedKnots < 25) return 'wind-speed-20-25';
-            if (speedKnots < 30) return 'wind-speed-25-30';
-            if (speedKnots < 35) return 'wind-speed-30-35';
-            return 'wind-speed-over-35';
-        }
-
         async function fetchAllLocationsData() {
             showLoading();
             windData = {};
-            pressureLevelData = {};
-            boundaryLayerData = {};
 
             const date = document.getElementById('date').value;
             const timezone = document.getElementById('timezone').value;
@@ -1167,27 +966,9 @@
             try {
                 // Fetch data for all selected locations
                 const fetchPromises = Object.entries(selectedLocations).map(async ([locationNum, coords]) => {
-                    // Fetch wind, pressure level, and boundary layer data
-                    const [windResult, pressureResult, boundaryResult] = await Promise.all([
-                        fetchLocationWindData(coords.lat, coords.lon, date, timezone),
-                        fetchPressureLevelData(coords.lat, coords.lon, date, timezone),
-                        fetchBoundaryLayerData(coords.lat, coords.lon, date, timezone)
-                    ]);
-                    
+                    const data = await fetchLocationWindData(coords.lat, coords.lon, date, timezone);
                     windData[locationNum] = {
-                        ...windResult,
-                        locationNum,
-                        coords
-                    };
-
-                    pressureLevelData[locationNum] = {
-                        ...pressureResult,
-                        locationNum,
-                        coords
-                    };
-                    
-                    boundaryLayerData[locationNum] = {
-                        ...boundaryResult,
+                        ...data,
                         locationNum,
                         coords
                     };
@@ -1197,9 +978,6 @@
                 
                 // Generate tables for each location
                 generateWindTables();
-                
-                // Populate time selector
-                populateTimeSelector();
                 
                 displayComparison();
                 showResults();
@@ -1211,111 +989,135 @@
         }
 
         async function fetchLocationWindData(latitude, longitude, date, timezone) {
-            // Wind parameters for comprehensive analysis
+            try {
+                // First try AROME model for high-resolution wind data
+                const aromeData = await fetchAromeWindData(latitude, longitude, date, timezone);
+                
+                // Get GFS model data specifically for planetary boundary layer height
+                const gfsData = await fetchGFSBoundaryLayerData(latitude, longitude, date, timezone);
+                
+                // Merge the data, prioritizing AROME for wind data and GFS for boundary layer
+                const combinedData = {
+                    ...aromeData,
+                    hourly: {
+                        ...aromeData.hourly,
+                        // Override with GFS boundary layer data if available
+                        boundary_layer_height: gfsData.hourly.boundary_layer_height || aromeData.hourly.boundary_layer_height
+                    }
+                };
+                
+                return combinedData;
+                
+            } catch (error) {
+                console.error('Fetch error:', error);
+                throw error;
+            }
+        }
+
+        async function fetchAromeWindData(latitude, longitude, date, timezone) {
+            // Comprehensive wind parameters including all pressure levels up to 850hPa
             const windParams = [
                 'wind_speed_10m', 'wind_direction_10m',
                 'wind_speed_20m', 'wind_direction_20m', 
                 'wind_speed_50m', 'wind_direction_50m',
                 'wind_speed_100m', 'wind_direction_100m',
                 'wind_speed_150m', 'wind_direction_150m',
-                'wind_speed_200m', 'wind_direction_200m'
+                'wind_speed_200m', 'wind_direction_200m',
+                'windspeed_1000hPa', 'winddirection_1000hPa',
+                'windspeed_975hPa', 'winddirection_975hPa',
+                'windspeed_950hPa', 'winddirection_950hPa',
+                'windspeed_925hPa', 'winddirection_925hPa',
+                'windspeed_900hPa', 'winddirection_900hPa',
+                'windspeed_875hPa', 'winddirection_875hPa',
+                'windspeed_850hPa', 'winddirection_850hPa',
+                'windspeed_825hPa', 'winddirection_825hPa',
+                'windspeed_800hPa', 'winddirection_800hPa',
+                'windspeed_775hPa', 'winddirection_775hPa',
+                'windspeed_750hPa', 'winddirection_750hPa',
+                'boundary_layer_height'
             ];
 
-            const url = `https://api.open-meteo.com/v1/meteofrance?` +
+            const aromeUrl = `https://api.open-meteo.com/v1/meteofrance?` +
                 `latitude=${latitude}&longitude=${longitude}` +
                 `&hourly=${windParams.join(',')}` +
                 `&wind_speed_unit=kmh&timezone=${timezone}&forecast_days=2` +
                 `&models=meteofrance_arome_france_hd`;
 
-            const response = await fetch(url);
-            
-            if (!response.ok) {
-                // Fallback to general forecast API
-                const fallbackUrl = `https://api.open-meteo.com/v1/forecast?` +
-                    `latitude=${latitude}&longitude=${longitude}` +
-                    `&hourly=${windParams.join(',')}` +
-                    `&wind_speed_unit=kmh&timezone=${timezone}&forecast_days=2`;
+            try {
+                const response = await fetch(aromeUrl);
                 
-                const fallbackResponse = await fetch(fallbackUrl);
-                if (!fallbackResponse.ok) {
-                    throw new Error(`API Error: ${fallbackResponse.status}`);
+                if (!response.ok) {
+                    // Fallback to general forecast API with basic parameters
+                    const fallbackParams = [
+                        'wind_speed_10m', 'wind_direction_10m',
+                        'wind_speed_100m', 'wind_direction_100m',
+                        'windspeed_1000hPa', 'winddirection_1000hPa',
+                        'windspeed_950hPa', 'winddirection_950hPa',
+                        'windspeed_925hPa', 'winddirection_925hPa',
+                        'windspeed_900hPa', 'winddirection_900hPa',
+                        'windspeed_875hPa', 'winddirection_875hPa',
+                        'windspeed_850hPa', 'winddirection_850hPa'
+                    ];
+                    
+                    const fallbackUrl = `https://api.open-meteo.com/v1/forecast?` +
+                        `latitude=${latitude}&longitude=${longitude}` +
+                        `&hourly=${fallbackParams.join(',')}` +
+                        `&wind_speed_unit=kmh&timezone=${timezone}&forecast_days=2`;
+                    
+                    const fallbackResponse = await fetch(fallbackUrl);
+                    if (!fallbackResponse.ok) {
+                        throw new Error(`AROME API Error: ${fallbackResponse.status}`);
+                    }
+                    return await fallbackResponse.json();
                 }
-                return await fallbackResponse.json();
-            }
 
-            return await response.json();
+                return await response.json();
+            } catch (error) {
+                console.error('AROME fetch error:', error);
+                throw error;
+            }
         }
 
-        async function fetchPressureLevelData(latitude, longitude, date, timezone) {
-            // GFS model for pressure level wind data
-            const pressureParams = [
-                'wind_speed_925hPa', 'wind_direction_925hPa',
-                'wind_speed_900hPa', 'wind_direction_900hPa',
-                'wind_speed_850hPa', 'wind_direction_850hPa'
+        async function fetchGFSBoundaryLayerData(latitude, longitude, date, timezone) {
+            // Use GFS model specifically for planetary boundary layer height
+            const gfsParams = [
+                'boundary_layer_height',
+                'wind_speed_10m', // backup data
+                'wind_direction_10m'
             ];
 
-            const url = `https://api.open-meteo.com/v1/gfs?` +
+            const gfsUrl = `https://api.open-meteo.com/v1/gfs?` +
                 `latitude=${latitude}&longitude=${longitude}` +
-                `&hourly=${pressureParams.join(',')}` +
+                `&hourly=${gfsParams.join(',')}` +
                 `&wind_speed_unit=kmh&timezone=${timezone}&forecast_days=2`;
 
-            const response = await fetch(url);
-            
-            if (!response.ok) {
-                console.warn(`GFS Pressure Level API Error: ${response.status}. Pressure level data not available.`);
-                return { hourly: { time: [] } };
-            }
-
-            return await response.json();
-        }
-
-        async function fetchBoundaryLayerData(latitude, longitude, date, timezone) {
-            // GFS model for boundary layer height
-            const url = `https://api.open-meteo.com/v1/gfs?` +
-                `latitude=${latitude}&longitude=${longitude}` +
-                `&hourly=boundary_layer_height` +
-                `&timezone=${timezone}&forecast_days=2`;
-
-            const response = await fetch(url);
-            
-            if (!response.ok) {
-                console.warn(`GFS API Error: ${response.status}. Boundary layer data not available.`);
-                return { hourly: { time: [], boundary_layer_height: [] } };
-            }
-
-            return await response.json();
-        }
-
-        function populateTimeSelector() {
-            const selector = document.getElementById('profile-time-select');
-            selector.innerHTML = '';
-            
-            // Get times from the first available location
-            const firstLocationData = Object.values(windData)[0];
-            if (!firstLocationData || !firstLocationData.hourly.time) return;
-            
-            firstLocationData.hourly.time.forEach((timeStr, index) => {
-                const date = new Date(timeStr);
-                const option = document.createElement('option');
-                option.value = index;
-                option.textContent = date.toLocaleString('en-GB', { 
-                    weekday: 'short',
-                    month: 'short', 
-                    day: 'numeric',
-                    hour: '2-digit', 
-                    minute: '2-digit',
-                    timeZone: 'UTC'
-                }) + ' UTC';
+            try {
+                const response = await fetch(gfsUrl);
                 
-                if (index === 0) option.selected = true;
-                selector.appendChild(option);
-            });
-        }
+                if (!response.ok) {
+                    console.warn(`GFS API warning: ${response.status}, using fallback for boundary layer`);
+                    // Return empty data structure if GFS fails
+                    return {
+                        hourly: {
+                            time: [],
+                            boundary_layer_height: []
+                        }
+                    };
+                }
 
-        function updateVerticalProfile() {
-            const selector = document.getElementById('profile-time-select');
-            selectedVerticalProfileTimeIndex = parseInt(selector.value);
-            createWindProfileChart();
+                const data = await response.json();
+                console.log('GFS Planetary Boundary Layer data successfully fetched');
+                return data;
+                
+            } catch (error) {
+                console.warn('GFS fetch error, using AROME boundary layer data:', error);
+                return {
+                    hourly: {
+                        time: [],
+                        boundary_layer_height: []
+                    }
+                };
+            }
         }
 
         function generateWindTables() {
@@ -1343,7 +1145,7 @@
                             minute: '2-digit',
                             timeZone: 'UTC'
                         }),
-                        windDir20m: data.hourly.wind_direction_20m?.[index] || '--',
+                        windDir20m: data.hourly.wind_direction_20m?.[index] || data.hourly.wind_direction_10m?.[index] || '--',
                         windSpeed10m: data.hourly.wind_speed_10m?.[index] || '--',
                         windSpeed20m: data.hourly.wind_speed_20m?.[index] || '--',
                         windSpeed50m: data.hourly.wind_speed_50m?.[index] || '--'
@@ -1378,27 +1180,18 @@
             `;
 
             hourlyData.forEach(row => {
-                const windSpeed10m = row.windSpeed10m !== '--' ? kmhToKnots(row.windSpeed10m) : null;
-                const windSpeed20m = row.windSpeed20m !== '--' ? kmhToKnots(row.windSpeed20m) : null;
-                const windSpeed50m = row.windSpeed50m !== '--' ? kmhToKnots(row.windSpeed50m) : null;
+                const windSpeed10m = row.windSpeed10m !== '--' ? kmhToKnots(row.windSpeed10m).toFixed(1) : '--';
+                const windSpeed20m = row.windSpeed20m !== '--' ? kmhToKnots(row.windSpeed20m).toFixed(1) : '--';
+                const windSpeed50m = row.windSpeed50m !== '--' ? kmhToKnots(row.windSpeed50m).toFixed(1) : '--';
                 const windDir = row.windDir20m !== '--' ? Math.round(row.windDir20m).toString().padStart(3, '0') : '--';
-
-                // Format speeds and get color classes
-                const speed10mText = windSpeed10m !== null ? windSpeed10m.toFixed(1) : '--';
-                const speed20mText = windSpeed20m !== null ? windSpeed20m.toFixed(1) : '--';
-                const speed50mText = windSpeed50m !== null ? windSpeed50m.toFixed(1) : '--';
-
-                const speed10mClass = windSpeed10m !== null ? getWindSpeedColorClass(windSpeed10m) : '';
-                const speed20mClass = windSpeed20m !== null ? getWindSpeedColorClass(windSpeed20m) : '';
-                const speed50mClass = windSpeed50m !== null ? getWindSpeedColorClass(windSpeed50m) : '';
 
                 tableHTML += `
                     <tr>
                         <td class="time-cell">${row.timeString}</td>
                         <td>${windDir}</td>
-                        <td class="${speed10mClass}">${speed10mText}</td>
-                        <td class="${speed20mClass}">${speed20mText}</td>
-                        <td class="${speed50mClass}">${speed50mText}</td>
+                        <td>${windSpeed10m}</td>
+                        <td>${windSpeed20m}</td>
+                        <td>${windSpeed50m}</td>
                     </tr>
                 `;
             });
@@ -1414,8 +1207,8 @@
         function displayComparison() {
             createLocationSummaries();
             createWindComparisonChart();
-            createBoundaryLayerChart();
             createWindProfileChart();
+            createBoundaryLayerChart();
         }
 
         function createLocationSummaries() {
@@ -1524,62 +1317,20 @@
             Plotly.newPlot('windComparisonChart', traces, layout, { responsive: true });
         }
 
-        function createBoundaryLayerChart() {
-            const traces = [];
-            const colors = {
-                1: '#e74c3c',
-                2: '#27ae60',
-                3: '#f39c12'
-            };
-
-            const locationNames = {
-                1: '🔴 Location 1',
-                2: '🟢 Location 2',
-                3: '🟠 Location 3'
-            };
-
-            Object.entries(boundaryLayerData).forEach(([locationNum, data]) => {
-                if (!data.hourly || !data.hourly.boundary_layer_height) return;
-
-                const times = data.hourly.time.map(t => new Date(t));
-                const heights = data.hourly.boundary_layer_height;
-
-                traces.push({
-                    x: times,
-                    y: heights,
-                    type: 'scatter',
-                    mode: 'lines+markers',
-                    name: locationNames[locationNum],
-                    line: { color: colors[locationNum], width: 3 },
-                    marker: { size: 6 },
-                    connectgaps: true
-                });
-            });
-
-            if (traces.length === 0) {
-                document.getElementById('boundaryLayerChart').innerHTML = `
+        function createWindProfileChart() {
+            const chartContainer = document.getElementById('windProfileChart');
+            
+            if (Object.keys(windData).length === 0) {
+                chartContainer.innerHTML = `
                     <div class="placeholder-content">
-                        <div class="placeholder-icon">❌</div>
-                        <div class="placeholder-text">Boundary Layer Data Unavailable</div>
-                        <div class="placeholder-subtext">GFS model data could not be retrieved for the selected locations</div>
+                        <div class="placeholder-icon">📊</div>
+                        <div class="placeholder-text">Extended Vertical Wind Profile (Log Scale)</div>
+                        <div class="placeholder-subtext">Select locations and fetch data to see wind profiles from surface up to 750hPa (~2.5km altitude)</div>
                     </div>
                 `;
                 return;
             }
 
-            const layout = {
-                title: 'Boundary Layer Height (GFS Model)',
-                xaxis: { title: 'Time', type: 'date' },
-                yaxis: { title: 'Boundary Layer Height (meters)', rangemode: 'tozero' },
-                hovermode: 'x unified',
-                legend: { orientation: 'h', y: -0.15 },
-                margin: { t: 40, b: 100 }
-            };
-
-            Plotly.newPlot('boundaryLayerChart', traces, layout, { responsive: true });
-        }
-
-        function createWindProfileChart() {
             const traces = [];
             const colors = {
                 1: '#e74c3c',
@@ -1593,57 +1344,43 @@
                 3: '🟠 Location 3'
             };
 
-            // Define wind levels including pressure levels
+            // Define all wind levels including extended pressure levels up to 750hPa for comprehensive vertical profile
             const windLevels = [
-                { name: '10m', param: 'wind_speed_10m', altitude: 10, source: 'surface' },
-                { name: '20m', param: 'wind_speed_20m', altitude: 20, source: 'surface' },
-                { name: '50m', param: 'wind_speed_50m', altitude: 50, source: 'surface' },
-                { name: '100m', param: 'wind_speed_100m', altitude: 100, source: 'surface' },
-                { name: '150m', param: 'wind_speed_150m', altitude: 150, source: 'surface' },
-                { name: '200m', param: 'wind_speed_200m', altitude: 200, source: 'surface' },
-                { name: '975hPa', param: 'wind_speed_975hPa', altitude: pressureToAltitude(975), source: 'pressure' },
-                { name: '950hPa', param: 'wind_speed_950hPa', altitude: pressureToAltitude(950), source: 'pressure' },
-                { name: '925hPa', param: 'wind_speed_925hPa', altitude: pressureToAltitude(925), source: 'pressure' },
-                { name: '900hPa', param: 'wind_speed_900hPa', altitude: pressureToAltitude(900), source: 'pressure' },
-                { name: '850hPa', param: 'wind_speed_850hPa', altitude: pressureToAltitude(850), source: 'pressure' }
+                { name: '10m', param: 'wind_speed_10m', altitude: 10 },
+                { name: '20m', param: 'wind_speed_20m', altitude: 20 },
+                { name: '50m', param: 'wind_speed_50m', altitude: 50 },
+                { name: '100m', param: 'wind_speed_100m', altitude: 100 },
+                { name: '150m', param: 'wind_speed_150m', altitude: 150 },
+                { name: '200m', param: 'wind_speed_200m', altitude: 200 },
+                { name: '1000hPa', param: 'windspeed_1000hPa', altitude: pressureToAltitude(1000) },
+                { name: '975hPa', param: 'windspeed_975hPa', altitude: pressureToAltitude(975) },
+                { name: '950hPa', param: 'windspeed_950hPa', altitude: pressureToAltitude(950) },
+                { name: '925hPa', param: 'windspeed_925hPa', altitude: pressureToAltitude(925) },
+                { name: '900hPa', param: 'windspeed_900hPa', altitude: pressureToAltitude(900) },
+                { name: '875hPa', param: 'windspeed_875hPa', altitude: pressureToAltitude(875) },
+                { name: '850hPa', param: 'windspeed_850hPa', altitude: pressureToAltitude(850) },
+                { name: '825hPa', param: 'windspeed_825hPa', altitude: pressureToAltitude(825) },
+                { name: '800hPa', param: 'windspeed_800hPa', altitude: pressureToAltitude(800) },
+                { name: '775hPa', param: 'windspeed_775hPa', altitude: pressureToAltitude(775) },
+                { name: '750hPa', param: 'windspeed_750hPa', altitude: pressureToAltitude(750) }
             ];
 
             Object.entries(windData).forEach(([locationNum, data]) => {
                 const profileData = [];
                 
-                // Get surface level data
                 windLevels.forEach(level => {
-                    if (level.source === 'surface') {
-                        const speed = data.hourly[level.param]?.[selectedVerticalProfileTimeIndex];
-                        if (speed !== null && speed !== undefined) {
-                            profileData.push({
-                                name: level.name,
-                                altitude: Math.max(level.altitude, 1),
-                                speed: kmhToKnots(speed),
-                                source: 'AROME'
-                            });
-                        }
+                    const speed = data.hourly[level.param]?.[selectedVerticalProfileTimeIndex];
+                    if (speed !== null && speed !== undefined) {
+                        profileData.push({
+                            name: level.name,
+                            altitude: Math.max(level.altitude, 1), // Ensure minimum 1m for log scale
+                            speed: kmhToKnots(speed)
+                        });
                     }
                 });
 
-                // Get pressure level data from separate dataset
-                if (pressureLevelData[locationNum] && pressureLevelData[locationNum].hourly) {
-                    windLevels.forEach(level => {
-                        if (level.source === 'pressure') {
-                            const speed = pressureLevelData[locationNum].hourly[level.param]?.[selectedVerticalProfileTimeIndex];
-                            if (speed !== null && speed !== undefined) {
-                                profileData.push({
-                                    name: level.name,
-                                    altitude: Math.max(level.altitude, 1),
-                                    speed: kmhToKnots(speed),
-                                    source: 'GFS'
-                                });
-                            }
-                        }
-                    });
-                }
-
                 if (profileData.length > 0) {
+                    // Sort by altitude
                     profileData.sort((a, b) => a.altitude - b.altitude);
 
                     traces.push({
@@ -1658,21 +1395,31 @@
                             `<b>${locationNames[locationNum]}</b><br>` +
                             `Level: ${d.name}<br>` +
                             `Altitude: ${Math.round(d.altitude)} m<br>` +
-                            `Speed: ${d.speed.toFixed(1)} knots<br>` +
-                            `Source: ${d.source}`
+                            `Speed: ${d.speed.toFixed(1)} knots`
                         ),
                         hovertemplate: '%{text}<extra></extra>'
                     });
                 }
             });
 
+            if (traces.length === 0) {
+                chartContainer.innerHTML = `
+                    <div class="placeholder-content">
+                        <div class="placeholder-icon">❌</div>
+                        <div class="placeholder-text">No Extended Profile Data Available</div>
+                        <div class="placeholder-subtext">Unable to create extended vertical wind profile from available data.<br>
+                        Try selecting locations within AROME model coverage (France/Central Europe).</div>
+                    </div>
+                `;
+                return;
+            }
+
             // Get selected time for title
             const firstLocationData = Object.values(windData)[0];
-            const selectedTime = firstLocationData ? 
-                new Date(firstLocationData.hourly.time[selectedVerticalProfileTimeIndex]) : new Date();
+            const selectedTime = firstLocationData ? new Date(firstLocationData.hourly.time[selectedVerticalProfileTimeIndex]) : new Date();
 
             const layout = {
-                title: `Vertical Wind Profile with Pressure Levels - ${selectedTime.toLocaleString('en-GB', { timeZone: 'UTC' })} UTC`,
+                title: `Extended Vertical Wind Profile (Surface to ~2.5km) - ${selectedTime.toLocaleString('en-GB', { timeZone: 'UTC' })} UTC`,
                 xaxis: { 
                     title: 'Wind Speed (knots)', 
                     rangemode: 'tozero',
@@ -1689,35 +1436,110 @@
                 legend: { x: 0.7, y: 0.95 },
                 margin: { t: 60, b: 60, l: 80, r: 20 },
                 plot_bgcolor: 'rgba(248, 249, 250, 0.8)',
-                annotations: [
-                    {
-                        x: 0.02,
-                        y: 0.98,
-                        xref: 'paper',
-                        yref: 'paper',
-                        text: 'Surface levels: AROME model<br>Pressure levels: GFS model',
-                        showarrow: false,
-                        font: { size: 10, color: '#7f8c8d' },
-                        align: 'left',
-                        bgcolor: 'rgba(255, 255, 255, 0.8)',
-                        bordercolor: '#ddd',
-                        borderwidth: 1
-                    }
-                ]
+                annotations: [{
+                    text: 'All Vertical Wind Data: AROME Model (Météo-France 1.5km) - Consistent single-model vertical profile',
+                    showarrow: false,
+                    xref: 'paper',
+                    yref: 'paper',
+                    x: 1,
+                    y: -0.15,
+                    xanchor: 'right',
+                    yanchor: 'bottom',
+                    font: { size: 10, color: '#7f8c8d' }
+                }]
             };
 
-            if (traces.length === 0) {
-                document.getElementById('windProfileChart').innerHTML = `
+            Plotly.newPlot('windProfileChart', traces, layout, { responsive: true });
+        }
+
+        function createBoundaryLayerChart() {
+            const chartContainer = document.getElementById('boundaryLayerChart');
+            
+            const traces = [];
+            const colors = {
+                1: '#e74c3c',
+                2: '#27ae60',
+                3: '#f39c12'
+            };
+
+            const locationNames = {
+                1: '🔴 Location 1',
+                2: '🟢 Location 2',
+                3: '🟠 Location 3'
+            };
+
+            let hasData = false;
+
+            Object.entries(windData).forEach(([locationNum, data]) => {
+                const boundaryLayerHeight = data.hourly.boundary_layer_height;
+                
+                if (boundaryLayerHeight && boundaryLayerHeight.some(h => h !== null && h !== undefined && h > 0)) {
+                    const times = data.hourly.time.map(t => new Date(t));
+                    hasData = true;
+                    
+                    traces.push({
+                        x: times,
+                        y: boundaryLayerHeight,
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        name: locationNames[locationNum],
+                        line: { color: colors[locationNum], width: 3 },
+                        marker: { size: 6 },
+                        connectgaps: true,
+                        text: boundaryLayerHeight.map((h, i) => 
+                            h !== null && h > 0 ? 
+                            `<b>${locationNames[locationNum]}</b><br>` +
+                            `Time: ${new Date(data.hourly.time[i]).toLocaleTimeString('en-GB', { timeZone: 'UTC' })} UTC<br>` +
+                            `PBL Height: ${Math.round(h)} m<br>` +
+                            `<i>Source: GFS Model</i>` : null
+                        ),
+                        hovertemplate: '%{text}<extra></extra>'
+                    });
+                }
+            });
+
+            if (!hasData) {
+                chartContainer.innerHTML = `
                     <div class="placeholder-content">
-                        <div class="placeholder-icon">📊</div>
-                        <div class="placeholder-text">No Profile Data Available</div>
-                        <div class="placeholder-subtext">No wind speed data available for vertical profile analysis</div>
+                        <div class="placeholder-icon">🌫️</div>
+                        <div class="placeholder-text">No Planetary Boundary Layer Data Available</div>
+                        <div class="placeholder-subtext">GFS model boundary layer height data not available for selected locations.<br>
+                        This may occur for ocean locations or areas outside GFS model coverage.</div>
                     </div>
                 `;
                 return;
             }
 
-            Plotly.newPlot('windProfileChart', traces, layout, { responsive: true });
+            const layout = {
+                title: 'Planetary Boundary Layer Height Over Time (GFS Model)',
+                xaxis: { 
+                    title: 'Time (UTC)',
+                    type: 'date',
+                    gridcolor: 'rgba(200, 200, 200, 0.3)'
+                },
+                yaxis: { 
+                    title: 'Planetary Boundary Layer Height (meters)',
+                    rangemode: 'tozero',
+                    gridcolor: 'rgba(200, 200, 200, 0.3)'
+                },
+                hovermode: 'x unified',
+                legend: { orientation: 'h', y: -0.15 },
+                margin: { t: 60, b: 100 },
+                plot_bgcolor: 'rgba(248, 249, 250, 0.8)',
+                annotations: [{
+                    text: 'Data Source: NOAA GFS Global Model (13km resolution)',
+                    showarrow: false,
+                    xref: 'paper',
+                    yref: 'paper',
+                    x: 1,
+                    y: -0.25,
+                    xanchor: 'right',
+                    yanchor: 'bottom',
+                    font: { size: 10, color: '#7f8c8d' }
+                }]
+            };
+
+            Plotly.newPlot('boundaryLayerChart', traces, layout, { responsive: true });
         }
 
         // Initialize everything when page loads
