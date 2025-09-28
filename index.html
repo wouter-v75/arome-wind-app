@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FULLY FIXED: AROME + GFS Hybrid Wind Analysis - All Issues Resolved</title>
+    <title>🔍 DEBUGGING: AROME + GFS Hybrid - GFS Data Issue Investigation</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.24.1/plotly.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -628,20 +628,20 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🌊 FULLY FIXED: AROME + GFS Hybrid Wind Analysis</h1>
-            <p>Interactive map-based high-resolution wind forecasts with enhanced debugging and theoretical profiles for all locations</p>
+            <h1>🔍 DEBUGGING VERSION: AROME + GFS Hybrid Wind Analysis</h1>
+            <p>Enhanced debugging to diagnose why GFS data only appears for Location 3</p>
             
             <div class="enhanced-notice">
-                ✨ FIXED ISSUES: Higher-level data for all locations + Theoretical profiles for all + Profile starts at 10m
-                <br>📊 Enhanced debugging + Improved data visualization
+                🔍 DEBUGGING ENHANCED: Sequential API calls + Comprehensive logging to diagnose GFS data issues
+                <br>📊 Open browser console to see detailed fetch progress for each location
             </div>
             
             <div class="fix-details">
-                <strong>🔧 Latest Fixes:</strong>
-                <br>1. 🌐 <strong>All Locations:</strong> Higher-level wind data now visible for all 3 locations
-                <br>2. 📏 <strong>Theoretical Profiles:</strong> Applied to all locations with color-coded lines
-                <br>3. 🎯 <strong>Profile Range:</strong> Theoretical profile now starts at 10m reference height
-                <br>4. 🔍 <strong>Enhanced Debug:</strong> Better logging to identify data availability issues
+                <strong>🔧 Debugging Improvements:</strong>
+                <br>1. 🚀 <strong>Sequential Fetching:</strong> Locations fetched one-by-one to avoid API rate limits
+                <br>2. 📊 <strong>Detailed Logging:</strong> Track AROME + GFS responses for each location separately  
+                <br>3. 🕐 <strong>API Delays:</strong> 500ms delay between requests to prevent rate limiting
+                <br>4. 🔍 <strong>Data Validation:</strong> Check every pressure level and boundary layer data point
             </div>
         </div>
 
@@ -750,7 +750,8 @@
 
         <div class="loading">
             <div class="spinner"></div>
-            <div>Fetching enhanced hybrid AROME + GFS wind data for all selected locations...</div>
+            <div>Fetching hybrid AROME + GFS wind data with enhanced debugging...</div>
+            <div style="font-size: 0.9rem; margin-top: 10px; opacity: 0.8;">Check browser console for detailed progress tracking</div>
         </div>
 
         <div class="error">
@@ -1106,17 +1107,33 @@
             const timezone = document.getElementById('timezone').value;
 
             try {
-                // Fetch data for all selected locations
-                const fetchPromises = Object.entries(selectedLocations).map(async ([locationNum, coords]) => {
-                    const data = await fetchLocationWindData(coords.lat, coords.lon, date, timezone);
-                    windData[locationNum] = {
-                        ...data,
-                        locationNum,
-                        coords
-                    };
-                });
-
-                await Promise.all(fetchPromises);
+                console.log('🚀 Starting data fetch for locations:', Object.keys(selectedLocations));
+                
+                // FIXED: Fetch locations sequentially instead of parallel to avoid API rate limits
+                for (const [locationNum, coords] of Object.entries(selectedLocations)) {
+                    console.log(`📍 Fetching data for Location ${locationNum}: ${coords.lat.toFixed(4)}, ${coords.lon.toFixed(4)}`);
+                    
+                    try {
+                        const data = await fetchLocationWindData(coords.lat, coords.lon, date, timezone, locationNum);
+                        windData[locationNum] = {
+                            ...data,
+                            locationNum,
+                            coords
+                        };
+                        console.log(`✅ Location ${locationNum} data fetch completed successfully`);
+                        
+                        // Add small delay between requests to avoid rate limiting
+                        if (Object.keys(selectedLocations).length > 1) {
+                            await new Promise(resolve => setTimeout(resolve, 500));
+                        }
+                        
+                    } catch (error) {
+                        console.error(`❌ Failed to fetch data for Location ${locationNum}:`, error);
+                        // Continue with other locations even if one fails
+                    }
+                }
+                
+                console.log('🎯 All location fetches completed. Final windData keys:', Object.keys(windData));
                 
                 // Set available times from first location
                 const firstLocationData = Object.values(windData)[0];
@@ -1138,32 +1155,35 @@
         }
 
         // CORRECTED: True hybrid approach - AROME for surface, GFS for pressure levels
-        async function fetchLocationWindData(latitude, longitude, date, timezone) {
+        async function fetchLocationWindData(latitude, longitude, date, timezone, locationNum) {
             try {
-                console.log('🔄 Fetching hybrid wind data...');
+                console.log(`🔄 Location ${locationNum}: Starting hybrid wind data fetch...`);
                 
                 // 1. AROME for surface wind data (10m-200m)
-                const aromeData = await fetchAromeWindData(latitude, longitude, date, timezone);
-                console.log('✅ AROME surface data fetched');
+                console.log(`🏠 Location ${locationNum}: Fetching AROME surface data...`);
+                const aromeData = await fetchAromeWindData(latitude, longitude, date, timezone, locationNum);
+                console.log(`✅ Location ${locationNum}: AROME surface data fetched`);
                 
                 // 2. GFS for pressure level wind data (975hPa-750hPa) + boundary layer
-                const gfsData = await fetchGFSPressureLevelData(latitude, longitude, date, timezone);
-                console.log('✅ GFS pressure level data fetched');
+                console.log(`🌍 Location ${locationNum}: Fetching GFS pressure level data...`);
+                const gfsData = await fetchGFSPressureLevelData(latitude, longitude, date, timezone, locationNum);
+                console.log(`✅ Location ${locationNum}: GFS pressure level data fetched`);
                 
                 // 3. Merge the datasets - AROME surface + GFS pressure levels
-                const hybridData = mergeHybridWindData(aromeData, gfsData);
-                console.log('✅ Hybrid data merged successfully');
+                console.log(`🔗 Location ${locationNum}: Merging hybrid data...`);
+                const hybridData = mergeHybridWindData(aromeData, gfsData, locationNum);
+                console.log(`✅ Location ${locationNum}: Hybrid data merged successfully`);
                 
                 return hybridData;
                 
             } catch (error) {
-                console.error('❌ Fetch error:', error);
+                console.error(`❌ Location ${locationNum}: Fetch error:`, error);
                 throw error;
             }
         }
 
         // AROME: Surface levels only (10m-200m)
-        async function fetchAromeWindData(latitude, longitude, date, timezone) {
+        async function fetchAromeWindData(latitude, longitude, date, timezone, locationNum) {
             const surfaceParams = [
                 'wind_speed_10m', 'wind_direction_10m',
                 'wind_speed_20m', 'wind_direction_20m', 
@@ -1179,10 +1199,14 @@
                 `&wind_speed_unit=kmh&timezone=${timezone}&forecast_days=2` +
                 `&models=meteofrance_arome_france_hd`;
 
+            console.log(`🏠 Location ${locationNum}: AROME URL:`, aromeUrl);
+
             try {
                 const response = await fetch(aromeUrl);
+                console.log(`🏠 Location ${locationNum}: AROME response status:`, response.status);
                 
                 if (!response.ok) {
+                    console.warn(`🏠 Location ${locationNum}: AROME API failed, trying fallback...`);
                     // Fallback to general forecast API for surface data
                     const fallbackParams = [
                         'wind_speed_10m', 'wind_direction_10m',
@@ -1194,22 +1218,29 @@
                         `&hourly=${fallbackParams.join(',')}` +
                         `&wind_speed_unit=kmh&timezone=${timezone}&forecast_days=2`;
                     
+                    console.log(`🏠 Location ${locationNum}: Fallback URL:`, fallbackUrl);
                     const fallbackResponse = await fetch(fallbackUrl);
+                    console.log(`🏠 Location ${locationNum}: Fallback response status:`, fallbackResponse.status);
+                    
                     if (!fallbackResponse.ok) {
                         throw new Error(`AROME API Error: ${fallbackResponse.status}`);
                     }
-                    return await fallbackResponse.json();
+                    const fallbackData = await fallbackResponse.json();
+                    console.log(`🏠 Location ${locationNum}: Fallback data keys:`, Object.keys(fallbackData.hourly || {}));
+                    return fallbackData;
                 }
 
-                return await response.json();
+                const data = await response.json();
+                console.log(`🏠 Location ${locationNum}: AROME data keys:`, Object.keys(data.hourly || {}));
+                return data;
             } catch (error) {
-                console.error('AROME fetch error:', error);
+                console.error(`🏠 Location ${locationNum}: AROME fetch error:`, error);
                 throw error;
             }
         }
 
         // CORRECTED: GFS for pressure level wind data (REMOVED 1000hPa)
-        async function fetchGFSPressureLevelData(latitude, longitude, date, timezone) {
+        async function fetchGFSPressureLevelData(latitude, longitude, date, timezone, locationNum) {
             // GFS pressure level parameters (REMOVED 1000hPa as requested)
             const pressureParams = [
                 'wind_speed_975hPa', 'wind_direction_975hPa',
@@ -1230,11 +1261,17 @@
                 `&hourly=${pressureParams.join(',')}` +
                 `&wind_speed_unit=kmh&timezone=${timezone}&forecast_days=2`;
 
+            console.log(`🌍 Location ${locationNum}: GFS URL:`, gfsUrl);
+
             try {
                 const response = await fetch(gfsUrl);
+                console.log(`🌍 Location ${locationNum}: GFS response status:`, response.status);
                 
                 if (!response.ok) {
-                    console.warn(`GFS API warning: ${response.status}, using fallback`);
+                    console.warn(`🌍 Location ${locationNum}: GFS API failed with status ${response.status}`);
+                    const errorText = await response.text();
+                    console.warn(`🌍 Location ${locationNum}: GFS error details:`, errorText);
+                    
                     // Return empty structure if GFS fails
                     return {
                         hourly: {
@@ -1245,11 +1282,38 @@
                 }
 
                 const data = await response.json();
-                console.log('🌍 GFS pressure level wind data successfully fetched');
+                console.log(`🌍 Location ${locationNum}: GFS data keys:`, Object.keys(data.hourly || {}));
+                
+                // Check if we actually got pressure level data
+                const pressureLevels = ['975hPa', '950hPa', '925hPa', '900hPa', '875hPa', '850hPa', '825hPa', '800hPa', '775hPa', '750hPa'];
+                pressureLevels.forEach(level => {
+                    const paramName = `wind_speed_${level}`;
+                    const windData = data.hourly[paramName];
+                    if (windData) {
+                        const validCount = windData.filter(v => v !== null && v !== undefined && v > 0).length;
+                        console.log(`🌍 Location ${locationNum}: ${level}: ${validCount}/${windData.length} valid data points`);
+                        if (validCount > 0) {
+                            console.log(`🌍 Location ${locationNum}: ${level} sample values:`, windData.slice(0, 5));
+                        }
+                    } else {
+                        console.warn(`🌍 Location ${locationNum}: ${level}: NO DATA FOUND`);
+                    }
+                });
+                
+                // Check boundary layer height
+                const blh = data.hourly.boundary_layer_height;
+                if (blh) {
+                    const validBLH = blh.filter(v => v !== null && v !== undefined && v > 0).length;
+                    console.log(`🌍 Location ${locationNum}: Boundary Layer Height: ${validBLH}/${blh.length} valid points`);
+                } else {
+                    console.warn(`🌍 Location ${locationNum}: Boundary Layer Height: NO DATA`);
+                }
+                
+                console.log(`🌍 Location ${locationNum}: GFS data successfully processed`);
                 return data;
                 
             } catch (error) {
-                console.warn('GFS fetch error:', error);
+                console.error(`🌍 Location ${locationNum}: GFS fetch error:`, error);
                 return {
                     hourly: {
                         time: [],
@@ -1260,7 +1324,9 @@
         }
 
         // CORRECTED: Merge AROME surface + GFS pressure levels
-        function mergeHybridWindData(aromeData, gfsData) {
+        function mergeHybridWindData(aromeData, gfsData, locationNum) {
+            console.log(`🔗 Location ${locationNum}: Starting data merge...`);
+            
             const hybridData = {
                 ...aromeData, // Base structure from AROME
                 hourly: {
@@ -1269,22 +1335,36 @@
                 }
             };
 
-            console.log('🔗 AROME data keys:', Object.keys(aromeData.hourly).filter(k => k.includes('wind')));
-            console.log('🔗 GFS data keys:', Object.keys(gfsData.hourly).filter(k => k.includes('wind')));
-            console.log('🔗 Merged hybrid data contains:', Object.keys(hybridData.hourly).filter(k => k.includes('wind')));
+            console.log(`🔗 Location ${locationNum}: AROME data keys:`, Object.keys(aromeData.hourly || {}).filter(k => k.includes('wind')));
+            console.log(`🔗 Location ${locationNum}: GFS data keys:`, Object.keys(gfsData.hourly || {}).filter(k => k.includes('wind')));
+            console.log(`🔗 Location ${locationNum}: Merged hybrid data keys:`, Object.keys(hybridData.hourly).filter(k => k.includes('wind')));
             
-            // Additional debugging: check actual pressure level data availability
+            // Detailed debugging: check actual pressure level data availability after merge
             const pressureLevels = ['975hPa', '950hPa', '925hPa', '900hPa', '875hPa', '850hPa', '825hPa', '800hPa', '775hPa', '750hPa'];
+            let totalPressureDataPoints = 0;
+            
             pressureLevels.forEach(level => {
                 const paramName = `wind_speed_${level}`;
                 const data = hybridData.hourly[paramName];
                 if (data) {
                     const validCount = data.filter(v => v !== null && v !== undefined && v > 0).length;
-                    console.log(`📊 ${level}: ${validCount}/${data.length} valid data points`);
+                    console.log(`🔗 Location ${locationNum}: ${level}: ${validCount}/${data.length} valid data points`);
+                    totalPressureDataPoints += validCount;
                 } else {
-                    console.log(`❌ ${level}: No data found`);
+                    console.warn(`🔗 Location ${locationNum}: ${level}: NO DATA IN MERGED RESULT`);
                 }
             });
+            
+            console.log(`🔗 Location ${locationNum}: Total pressure level data points: ${totalPressureDataPoints}`);
+            
+            // Check boundary layer height in merged data
+            const blh = hybridData.hourly.boundary_layer_height;
+            if (blh && blh.length > 0) {
+                const validBLH = blh.filter(v => v !== null && v !== undefined && v > 0).length;
+                console.log(`🔗 Location ${locationNum}: Merged Boundary Layer Height: ${validBLH}/${blh.length} valid points`);
+            } else {
+                console.warn(`🔗 Location ${locationNum}: NO BOUNDARY LAYER HEIGHT IN MERGED DATA`);
+            }
             
             return hybridData;
         }
