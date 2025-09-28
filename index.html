@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TRULY FIXED: AROME + GFS Hybrid Wind Analysis</title>
+    <title>ENHANCED: AROME + GFS Hybrid Wind Analysis with Time Selection</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.24.1/plotly.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -49,8 +49,8 @@
             font-size: 1.1rem;
         }
 
-        .fix-notice {
-            background: linear-gradient(135deg, #27ae60, #2ecc71);
+        .enhanced-notice {
+            background: linear-gradient(135deg, #8e44ad, #9b59b6);
             color: white;
             padding: 20px;
             border-radius: 8px;
@@ -451,6 +451,44 @@
             text-align: center;
         }
 
+        .chart-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .chart-control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-control-group label {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.9rem;
+        }
+
+        .time-selector {
+            padding: 8px 12px;
+            border: 2px solid #e0e6ed;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            background: white;
+            color: #2c3e50;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .time-selector:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
         .chart-wrapper {
             height: 600px;
             position: relative;
@@ -579,25 +617,30 @@
             .chart-wrapper {
                 height: 400px;
             }
+            
+            .chart-controls {
+                flex-direction: column;
+                gap: 10px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🌊 TRULY FIXED: AROME + GFS Hybrid Wind Analysis</h1>
-            <p>Interactive map-based high-resolution wind forecasts with multi-location comparison and detailed hourly tables</p>
+            <h1>🌊 ENHANCED: AROME + GFS Hybrid Wind Analysis</h1>
+            <p>Interactive map-based high-resolution wind forecasts with time selection and theoretical wind profiles</p>
             
-            <div class="fix-notice">
-                ✅ TRULY FIXED: Now correctly fetches pressure level data from GFS (not AROME)
-                <br>📊 Vertical wind profile will show data from surface to 2500m altitude
+            <div class="enhanced-notice">
+                ✨ NEW FEATURES: Time selection dropdown + Theoretical logarithmic wind profile for sea conditions
+                <br>📊 Removed 1000hPa (too close to surface) + Added interactive time control
             </div>
             
             <div class="fix-details">
-                <strong>🔧 What was fixed:</strong>
-                <br>1. ❌ <strong>Before:</strong> Tried to get pressure level data from AROME (surface model only)
-                <br>2. ✅ <strong>After:</strong> Correctly fetches pressure levels from GFS model
-                <br>3. 🎯 <strong>Result:</strong> True hybrid approach - AROME surface + GFS pressure levels
+                <strong>🎯 Enhanced Features:</strong>
+                <br>1. ⏰ <strong>Time Selection:</strong> Choose any hour to see vertical wind profile
+                <br>2. 📏 <strong>Theoretical Profile:</strong> Logarithmic wind profile for sea (z0=0.2mm)
+                <br>3. 🎯 <strong>Cleaner Data:</strong> Removed 1000hPa point (too close to measured surface data)
             </div>
         </div>
 
@@ -673,16 +716,14 @@
 
         <div class="control-section">
             <div style="background: #2ecc71; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                <strong>🌐 TRUE HYBRID WIND ANALYSIS:</strong> Combining the best of both high-resolution and global models for comprehensive vertical wind analysis.
+                <strong>🌐 ENHANCED HYBRID WIND ANALYSIS:</strong> Combining the best of both high-resolution and global models for comprehensive vertical wind analysis.
                 <br><br>
-                <strong>Data Sources (CORRECTED):</strong>
+                <strong>Data Sources:</strong>
                 <ul style="margin: 10px 0 0 20px;">
                     <li><strong>AROME Model (Météo-France):</strong> Surface wind data (10m-200m) at 1.5km resolution</li>
-                    <li><strong>GFS Model (NOAA):</strong> Pressure level wind data (1000hPa-750hPa) + boundary layer height</li>
-                    <li><strong>Vertical Coverage:</strong> Complete profile from surface to ~2500m altitude</li>
-                    <li><strong>Surface Resolution:</strong> AROME 1.5km for France/Central Europe</li>
-                    <li><strong>Upper Levels:</strong> GFS 13km global coverage for pressure levels</li>
-                    <li><strong>Fixed Issue:</strong> Now correctly fetches pressure data from GFS, not AROME</li>
+                    <li><strong>GFS Model (NOAA):</strong> Pressure level wind data (975hPa-750hPa) + boundary layer height</li>
+                    <li><strong>Theoretical Profile:</strong> Logarithmic wind profile for sea conditions (z0=0.2mm)</li>
+                    <li><strong>Interactive Features:</strong> Time selection + theoretical vs measured comparison</li>
                 </ul>
             </div>
             <div class="control-grid">
@@ -708,7 +749,7 @@
 
         <div class="loading">
             <div class="spinner"></div>
-            <div>Fetching hybrid AROME + GFS wind data for all selected locations...</div>
+            <div>Fetching enhanced hybrid AROME + GFS wind data for all selected locations...</div>
         </div>
 
         <div class="error">
@@ -771,7 +812,15 @@
             </div>
 
             <div class="chart-container">
-                <div class="chart-title">📈 TRUE HYBRID Vertical Wind Profile - AROME Surface + GFS Pressure Levels</div>
+                <div class="chart-title">📈 ENHANCED Vertical Wind Profile with Theoretical Sea Profile</div>
+                <div class="chart-controls">
+                    <div class="chart-control-group">
+                        <label for="time-selector">📅 Select Time:</label>
+                        <select id="time-selector" class="time-selector" onchange="updateWindProfile()">
+                            <option value="0">Loading...</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="chart-wrapper">
                     <div id="windProfileChart"></div>
                 </div>
@@ -791,7 +840,8 @@
         let markers = {};
         let windData = {};
         let selectedLocations = {};
-        let selectedVerticalProfileTimeIndex = 0; // Default to first hour
+        let selectedVerticalProfileTimeIndex = 0;
+        let availableTimes = [];
 
         // Initialize map
         function initMap() {
@@ -958,6 +1008,27 @@
             return Math.max(altitude, 1); // Ensure minimum 1m for log scale
         }
 
+        // Calculate theoretical logarithmic wind profile for sea conditions
+        function calculateTheoreticalSeaProfile(windSpeed10m) {
+            const profile = [];
+            const z0 = 0.0002; // Roughness length for sea (0.2mm)
+            const k = 0.41; // von Karman constant
+            
+            // Calculate friction velocity from 10m wind speed
+            const uStar = (windSpeed10m * k) / Math.log(10 / z0);
+            
+            // Generate profile from 1m to 100m
+            for (let z = 1; z <= 100; z += 1) {
+                const windSpeed = (uStar / k) * Math.log(z / z0);
+                profile.push({
+                    height: z,
+                    speed: windSpeed > 0 ? windSpeed : 0
+                });
+            }
+            
+            return profile;
+        }
+
         function showLoading() {
             document.querySelector('.loading').classList.add('show');
             document.querySelector('.error').classList.remove('show');
@@ -986,6 +1057,46 @@
             return kmh * 0.539957;
         }
 
+        function knotsToKmh(knots) {
+            return knots / 0.539957;
+        }
+
+        // Populate time selector dropdown
+        function populateTimeSelector() {
+            const selector = document.getElementById('time-selector');
+            selector.innerHTML = '';
+            
+            if (availableTimes.length === 0) {
+                selector.innerHTML = '<option value="0">No times available</option>';
+                return;
+            }
+            
+            availableTimes.forEach((timeStr, index) => {
+                const date = new Date(timeStr);
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = date.toLocaleString('en-GB', { 
+                    timeZone: 'UTC',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }) + ' UTC';
+                selector.appendChild(option);
+            });
+            
+            // Set default to first time
+            selectedVerticalProfileTimeIndex = 0;
+            selector.value = 0;
+        }
+
+        // Update wind profile when time is changed
+        function updateWindProfile() {
+            const selector = document.getElementById('time-selector');
+            selectedVerticalProfileTimeIndex = parseInt(selector.value);
+            createWindProfileChart();
+        }
+
         async function fetchAllLocationsData() {
             showLoading();
             windData = {};
@@ -1005,6 +1116,13 @@
                 });
 
                 await Promise.all(fetchPromises);
+                
+                // Set available times from first location
+                const firstLocationData = Object.values(windData)[0];
+                if (firstLocationData && firstLocationData.hourly.time) {
+                    availableTimes = firstLocationData.hourly.time;
+                    populateTimeSelector();
+                }
                 
                 // Generate tables for each location
                 generateWindTables();
@@ -1027,7 +1145,7 @@
                 const aromeData = await fetchAromeWindData(latitude, longitude, date, timezone);
                 console.log('✅ AROME surface data fetched');
                 
-                // 2. GFS for pressure level wind data (1000hPa-750hPa) + boundary layer
+                // 2. GFS for pressure level wind data (975hPa-750hPa) + boundary layer
                 const gfsData = await fetchGFSPressureLevelData(latitude, longitude, date, timezone);
                 console.log('✅ GFS pressure level data fetched');
                 
@@ -1089,11 +1207,10 @@
             }
         }
 
-        // CORRECTED: GFS for pressure level wind data
+        // CORRECTED: GFS for pressure level wind data (REMOVED 1000hPa)
         async function fetchGFSPressureLevelData(latitude, longitude, date, timezone) {
-            // GFS pressure level parameters (CORRECTED naming)
+            // GFS pressure level parameters (REMOVED 1000hPa as requested)
             const pressureParams = [
-                'wind_speed_1000hPa', 'wind_direction_1000hPa',
                 'wind_speed_975hPa', 'wind_direction_975hPa',
                 'wind_speed_950hPa', 'wind_direction_950hPa',
                 'wind_speed_925hPa', 'wind_direction_925hPa',
@@ -1352,7 +1469,7 @@
             Plotly.newPlot('windComparisonChart', traces, layout, { responsive: true });
         }
 
-        // CORRECTED: Wind profile chart using hybrid data
+        // ENHANCED: Wind profile chart with time selection and theoretical profile
         function createWindProfileChart() {
             const chartContainer = document.getElementById('windProfileChart');
             
@@ -1360,8 +1477,8 @@
                 chartContainer.innerHTML = `
                     <div class="placeholder-content">
                         <div class="placeholder-icon">📊</div>
-                        <div class="placeholder-text">TRUE HYBRID Vertical Wind Profile</div>
-                        <div class="placeholder-subtext">Select locations and fetch data to see wind profiles from surface up to 750hPa (~2.5km altitude)</div>
+                        <div class="placeholder-text">ENHANCED Vertical Wind Profile</div>
+                        <div class="placeholder-subtext">Select locations and fetch data to see wind profiles with theoretical comparison</div>
                     </div>
                 `;
                 return;
@@ -1380,7 +1497,7 @@
                 3: '🟠 Location 3'
             };
 
-            // CORRECTED: Define hybrid wind levels (AROME surface + GFS pressure)
+            // ENHANCED: Define hybrid wind levels (REMOVED 1000hPa as requested)
             const hybridWindLevels = [
                 // AROME Surface levels (10m-200m)
                 { name: '10m', param: 'wind_speed_10m', altitude: 10, source: 'AROME' },
@@ -1389,8 +1506,7 @@
                 { name: '100m', param: 'wind_speed_100m', altitude: 100, source: 'AROME' },
                 { name: '150m', param: 'wind_speed_150m', altitude: 150, source: 'AROME' },
                 { name: '200m', param: 'wind_speed_200m', altitude: 200, source: 'AROME' },
-                // GFS Pressure levels (corrected parameter names)
-                { name: '1000hPa', param: 'wind_speed_1000hPa', altitude: pressureToAltitude(1000), source: 'GFS' },
+                // GFS Pressure levels (REMOVED 1000hPa, starting from 975hPa)
                 { name: '975hPa', param: 'wind_speed_975hPa', altitude: pressureToAltitude(975), source: 'GFS' },
                 { name: '950hPa', param: 'wind_speed_950hPa', altitude: pressureToAltitude(950), source: 'GFS' },
                 { name: '925hPa', param: 'wind_speed_925hPa', altitude: pressureToAltitude(925), source: 'GFS' },
@@ -1425,7 +1541,6 @@
                 });
 
                 console.log(`🎯 Location ${locationNum} profile data points: ${profileData.length}`);
-                console.log('📋 Profile data:', profileData.map(d => `${d.name}: ${d.speed.toFixed(1)}kt @ ${Math.round(d.altitude)}m (${d.source})`));
 
                 if (profileData.length > 0) {
                     // Sort by altitude
@@ -1448,6 +1563,34 @@
                         ),
                         hovertemplate: '%{text}<extra></extra>'
                     });
+
+                    // NEW: Add theoretical logarithmic profile for sea conditions (only for first location)
+                    if (locationNum === '1') {
+                        const wind10m = data.hourly.wind_speed_10m?.[selectedVerticalProfileTimeIndex];
+                        if (wind10m && wind10m > 0) {
+                            const theoreticalProfile = calculateTheoreticalSeaProfile(wind10m);
+                            
+                            traces.push({
+                                x: theoreticalProfile.map(d => kmhToKnots(d.speed)),
+                                y: theoreticalProfile.map(d => d.height),
+                                type: 'scatter',
+                                mode: 'lines',
+                                name: '📏 Theoretical Sea Profile (z₀=0.2mm)',
+                                line: { 
+                                    color: '#95a5a6', 
+                                    width: 2, 
+                                    dash: 'dot' 
+                                },
+                                text: theoreticalProfile.map(d => 
+                                    `<b>Theoretical Sea Profile</b><br>` +
+                                    `Height: ${d.height} m<br>` +
+                                    `Speed: ${kmhToKnots(d.speed).toFixed(1)} knots<br>` +
+                                    `<i>Log profile (z₀=0.2mm)</i>`
+                                ),
+                                hovertemplate: '%{text}<extra></extra>'
+                            });
+                        }
+                    }
                 }
             });
 
@@ -1455,8 +1598,8 @@
                 chartContainer.innerHTML = `
                     <div class="placeholder-content">
                         <div class="placeholder-icon">❌</div>
-                        <div class="placeholder-text">No Hybrid Profile Data Available</div>
-                        <div class="placeholder-subtext">Unable to create hybrid vertical wind profile.<br>
+                        <div class="placeholder-text">No Enhanced Profile Data Available</div>
+                        <div class="placeholder-subtext">Unable to create enhanced vertical wind profile.<br>
                         Check console for detailed parameter availability information.</div>
                     </div>
                 `;
@@ -1464,11 +1607,11 @@
             }
 
             // Get selected time for title
-            const firstLocationData = Object.values(windData)[0];
-            const selectedTime = firstLocationData ? new Date(firstLocationData.hourly.time[selectedVerticalProfileTimeIndex]) : new Date();
+            const selectedTime = availableTimes[selectedVerticalProfileTimeIndex] ? 
+                new Date(availableTimes[selectedVerticalProfileTimeIndex]) : new Date();
 
             const layout = {
-                title: `✅ TRUE HYBRID Vertical Wind Profile - ${selectedTime.toLocaleString('en-GB', { timeZone: 'UTC' })} UTC`,
+                title: `✨ ENHANCED Vertical Wind Profile - ${selectedTime.toLocaleString('en-GB', { timeZone: 'UTC' })} UTC`,
                 xaxis: { 
                     title: 'Wind Speed (knots)', 
                     rangemode: 'tozero',
@@ -1482,11 +1625,11 @@
                     tickformat: '.0f'
                 },
                 hovermode: 'closest',
-                legend: { x: 0.7, y: 0.95 },
+                legend: { x: 0.02, y: 0.98 },
                 margin: { t: 60, b: 60, l: 80, r: 20 },
                 plot_bgcolor: 'rgba(248, 249, 250, 0.8)',
                 annotations: [{
-                    text: '✅ TRUE HYBRID: AROME (10m-200m) + GFS (1000hPa-750hPa) = Complete vertical profile',
+                    text: '✨ ENHANCED: Time selection + Theoretical sea profile (removed 1000hPa) + AROME+GFS hybrid',
                     showarrow: false,
                     xref: 'paper',
                     yref: 'paper',
@@ -1494,7 +1637,7 @@
                     y: -0.15,
                     xanchor: 'right',
                     yanchor: 'bottom',
-                    font: { size: 10, color: '#27ae60' }
+                    font: { size: 10, color: '#8e44ad' }
                 }]
             };
 
