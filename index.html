@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AROME Wind Analysis with Interactive Map V1.2</title>
+    <title>AROME Wind Analysis with Interactive Map V1.3 - FIXED</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.24.1/plotly.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -47,6 +47,15 @@
         .header p {
             color: #7f8c8d;
             font-size: 1.1rem;
+        }
+
+        .fix-notice {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 600;
         }
 
         .map-selection-section {
@@ -569,6 +578,9 @@
         <div class="header">
             <h1>🌊 AROME Wind Analysis</h1>
             <p>Interactive map-based high-resolution wind forecasts with multi-location comparison and detailed hourly tables</p>
+            <div class="fix-notice">
+                ✅ FIXED: Vertical wind profile now correctly displays data up to 750hPa (~2.5km altitude)
+            </div>
         </div>
 
         <div class="map-selection-section">
@@ -1015,7 +1027,7 @@
         }
 
         async function fetchAromeWindData(latitude, longitude, date, timezone) {
-            // Comprehensive wind parameters including all pressure levels up to 850hPa
+            // FIXED: Use correct parameter names - 'windspeed_XXXhPa' (NOT 'wind_speed_XXXhPa') for pressure levels
             const windParams = [
                 'wind_speed_10m', 'wind_direction_10m',
                 'wind_speed_20m', 'wind_direction_20m', 
@@ -1023,7 +1035,7 @@
                 'wind_speed_100m', 'wind_direction_100m',
                 'wind_speed_150m', 'wind_direction_150m',
                 'wind_speed_200m', 'wind_direction_200m',
-                'windspeed_1000hPa', 'winddirection_1000hPa',
+                'windspeed_1000hPa', 'winddirection_1000hPa',    // FIXED: No underscore between wind and speed
                 'windspeed_975hPa', 'winddirection_975hPa',
                 'windspeed_950hPa', 'winddirection_950hPa',
                 'windspeed_925hPa', 'winddirection_925hPa',
@@ -1051,7 +1063,7 @@
                     const fallbackParams = [
                         'wind_speed_10m', 'wind_direction_10m',
                         'wind_speed_100m', 'wind_direction_100m',
-                        'windspeed_1000hPa', 'winddirection_1000hPa',
+                        'windspeed_1000hPa', 'winddirection_1000hPa',    // FIXED: Consistent naming
                         'windspeed_950hPa', 'winddirection_950hPa',
                         'windspeed_925hPa', 'winddirection_925hPa',
                         'windspeed_900hPa', 'winddirection_900hPa',
@@ -1344,7 +1356,7 @@
                 3: '🟠 Location 3'
             };
 
-            // Define all wind levels with CORRECTED parameter names to match API response
+            // FIXED: Define all wind levels with CORRECT parameter names that match the API request
             const windLevels = [
                 { name: '10m', param: 'wind_speed_10m', altitude: 10 },
                 { name: '20m', param: 'wind_speed_20m', altitude: 20 },
@@ -1352,17 +1364,18 @@
                 { name: '100m', param: 'wind_speed_100m', altitude: 100 },
                 { name: '150m', param: 'wind_speed_150m', altitude: 150 },
                 { name: '200m', param: 'wind_speed_200m', altitude: 200 },
-                { name: '1000hPa', param: 'wind_speed_1000hPa', altitude: pressureToAltitude(1000) },
-                { name: '975hPa', param: 'wind_speed_975hPa', altitude: pressureToAltitude(975) },
-                { name: '950hPa', param: 'wind_speed_950hPa', altitude: pressureToAltitude(950) },
-                { name: '925hPa', param: 'wind_speed_925hPa', altitude: pressureToAltitude(925) },
-                { name: '900hPa', param: 'wind_speed_900hPa', altitude: pressureToAltitude(900) },
-                { name: '875hPa', param: 'wind_speed_875hPa', altitude: pressureToAltitude(875) },
-                { name: '850hPa', param: 'wind_speed_850hPa', altitude: pressureToAltitude(850) },
-                { name: '825hPa', param: 'wind_speed_825hPa', altitude: pressureToAltitude(825) },
-                { name: '800hPa', param: 'wind_speed_800hPa', altitude: pressureToAltitude(800) },
-                { name: '775hPa', param: 'wind_speed_775hPa', altitude: pressureToAltitude(775) },
-                { name: '750hPa', param: 'wind_speed_750hPa', altitude: pressureToAltitude(750) }
+                // FIXED: Use 'windspeed_' (no underscore) for pressure levels to match API response
+                { name: '1000hPa', param: 'windspeed_1000hPa', altitude: pressureToAltitude(1000) },
+                { name: '975hPa', param: 'windspeed_975hPa', altitude: pressureToAltitude(975) },
+                { name: '950hPa', param: 'windspeed_950hPa', altitude: pressureToAltitude(950) },
+                { name: '925hPa', param: 'windspeed_925hPa', altitude: pressureToAltitude(925) },
+                { name: '900hPa', param: 'windspeed_900hPa', altitude: pressureToAltitude(900) },
+                { name: '875hPa', param: 'windspeed_875hPa', altitude: pressureToAltitude(875) },
+                { name: '850hPa', param: 'windspeed_850hPa', altitude: pressureToAltitude(850) },
+                { name: '825hPa', param: 'windspeed_825hPa', altitude: pressureToAltitude(825) },
+                { name: '800hPa', param: 'windspeed_800hPa', altitude: pressureToAltitude(800) },
+                { name: '775hPa', param: 'windspeed_775hPa', altitude: pressureToAltitude(775) },
+                { name: '750hPa', param: 'windspeed_750hPa', altitude: pressureToAltitude(750) }
             ];
 
             Object.entries(windData).forEach(([locationNum, data]) => {
@@ -1370,7 +1383,7 @@
                 
                 // Debug: Log available parameters for troubleshooting
                 console.log(`Location ${locationNum} available wind parameters:`, 
-                    Object.keys(data.hourly || {}).filter(key => key.includes('wind_speed')));
+                    Object.keys(data.hourly || {}).filter(key => key.includes('wind')));
                 
                 windLevels.forEach(level => {
                     const speed = data.hourly[level.param]?.[selectedVerticalProfileTimeIndex];
@@ -1427,7 +1440,7 @@
             const selectedTime = firstLocationData ? new Date(firstLocationData.hourly.time[selectedVerticalProfileTimeIndex]) : new Date();
 
             const layout = {
-                title: `Extended Vertical Wind Profile (Surface to ~2.5km) - ${selectedTime.toLocaleString('en-GB', { timeZone: 'UTC' })} UTC`,
+                title: `FIXED: Extended Vertical Wind Profile (Surface to ~2.5km) - ${selectedTime.toLocaleString('en-GB', { timeZone: 'UTC' })} UTC`,
                 xaxis: { 
                     title: 'Wind Speed (knots)', 
                     rangemode: 'tozero',
@@ -1445,7 +1458,7 @@
                 margin: { t: 60, b: 60, l: 80, r: 20 },
                 plot_bgcolor: 'rgba(248, 249, 250, 0.8)',
                 annotations: [{
-                    text: 'All Vertical Wind Data: AROME Model (Météo-France 1.5km) - Consistent single-model vertical profile',
+                    text: '✅ FIXED: Parameter names now match API response - shows data up to 750hPa (~2500m)',
                     showarrow: false,
                     xref: 'paper',
                     yref: 'paper',
@@ -1453,7 +1466,7 @@
                     y: -0.15,
                     xanchor: 'right',
                     yanchor: 'bottom',
-                    font: { size: 10, color: '#7f8c8d' }
+                    font: { size: 10, color: '#27ae60' }
                 }]
             };
 
