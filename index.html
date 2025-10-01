@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🔍 DEBUGGING: AROME + GFS Hybrid - GFS Data Issue Investigation</title>
+    <title>🕐 TIMEZONE FIXED: AROME + GFS Hybrid Wind Analysis</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.24.1/plotly.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -628,20 +628,20 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔍 DEBUGGING VERSION: AROME + GFS Hybrid Wind Analysis</h1>
-            <p>Enhanced debugging to diagnose why GFS data only appears for Location 3</p>
+            <h1>🕐 TIMEZONE FIXED: AROME + GFS Hybrid Wind Analysis</h1>
+            <p>All times now properly display in selected timezone (UTC, Europe/Paris, etc.)</p>
             
             <div class="enhanced-notice">
-                🔍 DEBUGGING ENHANCED: Sequential API calls + Comprehensive logging to diagnose GFS data issues
-                <br>📊 Open browser console to see detailed fetch progress for each location
+                🕐 TIMEZONE FIXED: All times now convert properly to Europe/Paris and other selected timezones
+                <br>📊 Tables, dropdowns, and chart labels all respect timezone selection
             </div>
             
             <div class="fix-details">
-                <strong>🔧 Debugging Improvements:</strong>
-                <br>1. 🚀 <strong>Sequential Fetching:</strong> Locations fetched one-by-one to avoid API rate limits
-                <br>2. 📊 <strong>Detailed Logging:</strong> Track AROME + GFS responses for each location separately  
-                <br>3. 🕐 <strong>API Delays:</strong> 500ms delay between requests to prevent rate limiting
-                <br>4. 🔍 <strong>Data Validation:</strong> Check every pressure level and boundary layer data point
+                <strong>🕐 Timezone Fixes:</strong>
+                <br>1. ⏰ <strong>Time Selector:</strong> Dropdown shows times in selected timezone
+                <br>2. 📊 <strong>Tables:</strong> Wind table times converted to Europe/Paris when selected
+                <br>3. 📈 <strong>Charts:</strong> All chart titles and hover text use correct timezone
+                <br>4. 🔍 <strong>Auto-detect:</strong> Automatically uses browser timezone when "auto" selected
             </div>
         </div>
 
@@ -750,8 +750,8 @@
 
         <div class="loading">
             <div class="spinner"></div>
-            <div>Fetching hybrid AROME + GFS wind data with enhanced debugging...</div>
-            <div style="font-size: 0.9rem; margin-top: 10px; opacity: 0.8;">Check browser console for detailed progress tracking</div>
+            <div>Fetching hybrid AROME + GFS wind data...</div>
+            <div style="font-size: 0.9rem; margin-top: 10px; opacity: 0.8;">Times will be displayed in your selected timezone</div>
         </div>
 
         <div class="error">
@@ -760,7 +760,7 @@
 
         <!-- ALWAYS VISIBLE HOURLY TABLES -->
         <div class="tables-section">
-            <div class="tables-title">📊 Hourly Wind Tables (08:00 - 18:00 UTC)</div>
+            <div class="tables-title" id="tables-title">📊 Hourly Wind Tables (08:00 - 18:00)</div>
             <div class="tables-grid">
                 <div class="table-container location-1" id="table-container-1">
                     <div class="table-header location-1">🔴 Location 1 - Wind Forecast</div>
@@ -844,6 +844,7 @@
         let selectedLocations = {};
         let selectedVerticalProfileTimeIndex = 0;
         let availableTimes = [];
+        let selectedTimezone = 'UTC'; // Track selected timezone
 
         // Initialize map
         function initMap() {
@@ -1077,13 +1078,14 @@
                 const date = new Date(timeStr);
                 const option = document.createElement('option');
                 option.value = index;
+                // FIXED: Use selected timezone instead of hardcoded UTC
                 option.textContent = date.toLocaleString('en-GB', { 
-                    timeZone: 'UTC',
+                    timeZone: selectedTimezone,
                     month: 'short',
                     day: 'numeric',
                     hour: '2-digit',
                     minute: '2-digit'
-                }) + ' UTC';
+                }) + (selectedTimezone === 'UTC' ? ' UTC' : ` (${selectedTimezone})`);
                 selector.appendChild(option);
             });
             
@@ -1105,6 +1107,14 @@
 
             const date = document.getElementById('date').value;
             const timezone = document.getElementById('timezone').value;
+            
+            // FIXED: Store selected timezone (convert 'auto' to actual timezone)
+            if (timezone === 'auto') {
+                selectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            } else {
+                selectedTimezone = timezone;
+            }
+            console.log('🕐 Selected timezone:', selectedTimezone);
 
             try {
                 console.log('🚀 Starting data fetch for locations:', Object.keys(selectedLocations));
@@ -1141,6 +1151,10 @@
                     availableTimes = firstLocationData.hourly.time;
                     populateTimeSelector();
                 }
+                
+                // FIXED: Update tables title with timezone
+                const timezoneLabel = selectedTimezone === 'UTC' ? 'UTC' : selectedTimezone;
+                document.getElementById('tables-title').textContent = `📊 Hourly Wind Tables (08:00 - 18:00 ${timezoneLabel})`;
                 
                 // Generate tables for each location
                 generateWindTables();
@@ -1389,10 +1403,11 @@
                 if (hour >= 8 && hour <= 18) {
                     hourlyData.push({
                         time: date,
+                        // FIXED: Use selected timezone instead of hardcoded UTC
                         timeString: date.toLocaleTimeString('en-GB', { 
                             hour: '2-digit', 
                             minute: '2-digit',
-                            timeZone: 'UTC'
+                            timeZone: selectedTimezone
                         }),
                         windDir20m: data.hourly.wind_direction_20m?.[index] || data.hourly.wind_direction_10m?.[index] || '--',
                         windSpeed10m: data.hourly.wind_speed_10m?.[index] || '--',
@@ -1413,12 +1428,15 @@
                 return;
             }
 
+            // FIXED: Add timezone info to table header
+            const timezoneLabel = selectedTimezone === 'UTC' ? 'UTC' : selectedTimezone;
+            
             // Create table HTML
             let tableHTML = `
                 <table class="wind-table">
                     <thead>
                         <tr>
-                            <th>Time (UTC)</th>
+                            <th>Time (${timezoneLabel})</th>
                             <th>Wind Dir<br>20m (°)</th>
                             <th>Wind Speed<br>10m (kt)</th>
                             <th>Wind Speed<br>20m (kt)</th>
@@ -1713,9 +1731,18 @@
             // Get selected time for title
             const selectedTime = availableTimes[selectedVerticalProfileTimeIndex] ? 
                 new Date(availableTimes[selectedVerticalProfileTimeIndex]) : new Date();
+            
+            // FIXED: Format time with selected timezone
+            const timeLabel = selectedTime.toLocaleString('en-GB', { 
+                timeZone: selectedTimezone,
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }) + (selectedTimezone === 'UTC' ? ' UTC' : ` (${selectedTimezone})`);
 
             const layout = {
-                title: `🔧 FULLY FIXED Vertical Wind Profile - ${selectedTime.toLocaleString('en-GB', { timeZone: 'UTC' })} UTC`,
+                title: `🔧 FULLY FIXED Vertical Wind Profile - ${timeLabel}`,
                 xaxis: { 
                     title: 'Wind Speed (knots)', 
                     rangemode: 'tozero',
@@ -1733,7 +1760,7 @@
                 margin: { t: 60, b: 60, l: 80, r: 20 },
                 plot_bgcolor: 'rgba(248, 249, 250, 0.8)',
                 annotations: [{
-                    text: '🔧 FULLY FIXED: All locations show higher data + Theoretical profiles for all + Enhanced debugging',
+                    text: '🕐 TIMEZONE FIXED: All times display in selected timezone + Full debugging + Theoretical profiles',
                     showarrow: false,
                     xref: 'paper',
                     yref: 'paper',
@@ -1785,7 +1812,11 @@
                         text: boundaryLayerHeight.map((h, i) => 
                             h !== null && h > 0 ? 
                             `<b>${locationNames[locationNum]}</b><br>` +
-                            `Time: ${new Date(data.hourly.time[i]).toLocaleTimeString('en-GB', { timeZone: 'UTC' })} UTC<br>` +
+                            `Time: ${new Date(data.hourly.time[i]).toLocaleTimeString('en-GB', { 
+                                timeZone: selectedTimezone,
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            })} (${selectedTimezone})<br>` +
                             `PBL Height: ${Math.round(h)} m<br>` +
                             `<i>Source: GFS Model</i>` : null
                         ),
