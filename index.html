@@ -1463,8 +1463,8 @@
                 mT.attr('cx', sx(d.temp, d.press)).attr('cy', yy);
                 mD.attr('cx', sx(d.dwpt, d.press)).attr('cy', yy);
 
-                // Black dry adiabat from the cursor's temperature (red line) down to the surface
-                const dewPts = surfaceDryDescent(d.temp, d.press, P0);
+                // Black isotherm (constant temperature) from the cursor down to the surface
+                const dewPts = surfaceIsotherm(d.temp, d.press, P0);
                 dewLine.attr('d', parcelLine(dewPts));
                 const sfcVal = dewPts.length ? dewPts[dewPts.length - 1].temp : d.temp;
 
@@ -1525,15 +1525,10 @@
         return pts;
     }
 
-    // Dry adiabat (constant potential temperature) from a point down to the surface.
-    // An unsaturated parcel brought down to the surface warms along this curve; its
-    // surface-end temperature is the parcel's surface temperature.
-    function surfaceDryDescent(Tc, Plevel, P0) {
-        const thetaK = (Tc + 273.15) * Math.pow(1000 / Plevel, 0.2854);
-        const pts = [];
-        for (let p = Plevel; p < P0; p += 5) pts.push({ press: p, temp: thetaK * Math.pow(p / 1000, 0.2854) - 273.15 });
-        pts.push({ press: P0, temp: thetaK * Math.pow(P0 / 1000, 0.2854) - 273.15 });
-        return pts;
+    // Isotherm (constant temperature) from a point down to the surface — follows the
+    // temperature gridlines (bottom-left → top-right).
+    function surfaceIsotherm(Tc, Plevel, P0) {
+        return [{ press: Plevel, temp: Tc }, { press: P0, temp: Tc }];
     }
 
     // Standard meteorological wind barb (speed in knots). Staff points toward wind source.
