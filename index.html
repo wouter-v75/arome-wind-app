@@ -392,6 +392,10 @@
                 Source selectable — GFS (densest, 25 hPa) · ICON · ECMWF.
             </div>
             <div id="skewtChart" style="max-width:560px;margin:0 auto;"></div>
+            <div id="skewt-indices" style="text-align:center;font-size:0.95rem;color:#2c3e50;margin-top:12px;font-weight:600;"></div>
+            <div style="text-align:center;font-size:0.75rem;color:#7f8c8d;margin-top:2px;">
+                TCON = convective temperature · CCL = convective condensation level · LCL = lifting condensation level (heights above sea level)
+            </div>
         </div>
     </div>
 
@@ -1338,6 +1342,8 @@
         const container = document.getElementById('skewtChart');
         if (!container) return;
         container.innerHTML = '';
+        const idxEl = document.getElementById('skewt-indices');
+        if (idxEl) idxEl.textContent = '';
 
         if (!window.d3) {
             container.innerHTML = `<div class="placeholder-content"><div class="placeholder-icon">⚠️</div><div class="placeholder-text">D3 failed to load</div><div class="placeholder-subtext">Check your internet connection and reload.</div></div>`;
@@ -1362,6 +1368,16 @@
         }
 
         drawSkewT(container, data);
+
+        // Surface-parcel convective indices below the chart
+        if (idxEl) {
+            const ci = computeConvectiveIndices(data);
+            const fmtH = v => (v != null && isFinite(v)) ? `${Math.round(v)} m` : '—';
+            const fmtT = v => (v != null && isFinite(v)) ? `${Math.round(v)} °C` : '—';
+            idxEl.innerHTML = ci
+                ? `TCON: ${fmtT(ci.Tcon)} &nbsp;·&nbsp; CCL: ${fmtH(ci.Hccl)} &nbsp;·&nbsp; LCL: ${fmtH(ci.Hlcl)}`
+                : '';
+        }
     }
 
     function drawSkewT(container, data) {
@@ -1529,6 +1545,59 @@
     // temperature gridlines (bottom-left → top-right).
     function surfaceIsotherm(Tc, Plevel, P0) {
         return [{ press: Plevel, temp: Tc }, { press: P0, temp: Tc }];
+    }
+
+    // Surface-parcel convective indices: LCL, CCL, and convective temperature (TCON).
+    function computeConvectiveIndices(data) {
+        if (!data || data.length < 3) return null;
+        const sfc = data[0];
+        const P0 = sfc.press, T0 = sfc.temp, Td0 = Math.min(sfc.dwpt, sfc.temp);
+        const T0K = T0 + 273.15, Td0K = Td0 + 273.15;
+        if (!isFinite(T0K) || !isFinite(Td0K)) return null;
+
+        // Linear interpolation (in log-p) of a field at a target pressure
+        const interp = (Pt, key) => {
+            if (Pt >= data[0].press) return data[0][key];
+            if (Pt <= data[data.length - 1].press) return data[data.length - 1][key];
+            for (let i = 0; i < data.length - 1; i++) {
+                const a = data[i], b = data[i + 1];
+                if (Pt <= a.press && Pt >= b.press) {
+                    const f = (Math.log(Pt) - Math.log(a.press)) / (Math.log(b.press) - Math.log(a.press));
+                    return a[key] + f * (b[key] - a[key]);
+                }
+            }
+            return null;
+        };
+
+        // LCL — Bolton (1980) temperature, Poisson for pressure
+        const Tlcl = 1 / (1 / (Td0K - 56) + Math.log(T0K / Td0K) / 800) + 56;
+        const Plcl = P0 * Math.pow(Tlcl / T0K, 3.504);
+        const Hlcl = interp(Plcl, 'hght');
+
+        // CCL — where the surface mixing-ratio line (isohume) first meets the env. temperature
+        const es0 = 6.112 * Math.exp(17.67 * Td0 / (Td0 + 243.5));
+        const w0 = 0.622 * es0 / Math.max(P0 - es0, 1e-6);
+        const tIso = p => { const es = w0 * p / (0.622 + w0); const ln = Math.log(es / 6.112); return 243.5 * ln / (17.67 - ln); };
+        let Pccl = null;
+        for (let i = 0; i < data.length - 1; i++) {
+            const a = data[i], b = data[i + 1];
+            if (a.press === b.press) continue;
+            const da = tIso(a.press) - a.temp, db = tIso(b.press) - b.temp;
+            if (da <= 0 && db >= 0) {
+                const f = da / (da - db);
+                Pccl = Math.exp(Math.log(a.press) + f * (Math.log(b.press) - Math.log(a.press)));
+                break;
+            }
+        }
+
+        let Tcon = null, Hccl = null;
+        if (Pccl) {
+            Hccl = interp(Pccl, 'hght');
+            const TenvCCL = interp(Pccl, 'temp');
+            const theta = (TenvCCL + 273.15) * Math.pow(1000 / Pccl, 0.2854);
+            Tcon = theta * Math.pow(P0 / 1000, 0.2854) - 273.15;
+        }
+        return { Plcl, Hlcl, Pccl, Hccl, Tcon };
     }
 
     // Standard meteorological wind barb (speed in knots). Staff points toward wind source.
