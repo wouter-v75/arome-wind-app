@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🕐 AROME + ECMWF + GFS Hybrid Wind Analysis</title>
+    <title>🕐 AROME + ECMWF + ICON + GFS Wind Analysis</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.24.1/plotly.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -38,6 +38,7 @@
         }
         .badge-arome { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
         .badge-ecmwf { background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; }
+        .badge-icon  { background: #fde7f3; color: #ad1457; border: 1px solid #f48fb1; }
         .map-selection-section {
             background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);
             border-radius: 15px; padding: 30px; margin-bottom: 30px;
@@ -76,6 +77,30 @@
         @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
         .error { background: #e74c3c; color: white; padding: 15px; border-radius: 8px; margin: 20px 0; display: none; white-space: pre-line; font-family: monospace; font-size: 0.9rem; max-height: 200px; overflow-y: auto; }
         .error.show { display: block; }
+
+        /* ── MODEL SELECTOR ─────────────────────────────────────────── */
+        .model-selector-section {
+            background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);
+            border-radius: 15px; padding: 22px 30px; margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: none;
+        }
+        .model-selector-section.show { display: block; }
+        .model-selector-title { font-size: 1.15rem; font-weight: 600; color: #2c3e50; margin-bottom: 16px; text-align: center; }
+        .model-selector-sub { font-size: 0.85rem; font-weight: 400; color: #7f8c8d; }
+        .model-btn-group { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+        .model-btn {
+            padding: 12px 26px; border: 2px solid #e0e6ed; border-radius: 10px; background: white;
+            font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.25s ease; color: #2c3e50;
+            display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 150px;
+        }
+        .model-btn:hover:not(:disabled) { border-color: #3498db; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(52,152,219,0.2); }
+        .model-btn.active { color: white; border-color: transparent; box-shadow: 0 6px 16px rgba(0,0,0,0.2); }
+        .model-btn.active[data-model="AROME"] { background: linear-gradient(135deg,#2e7d32,#43a047); }
+        .model-btn.active[data-model="ECMWF"] { background: linear-gradient(135deg,#1565c0,#1e88e5); }
+        .model-btn.active[data-model="ICON"]  { background: linear-gradient(135deg,#ad1457,#d81b60); }
+        .model-btn .model-btn-sub { font-size: 0.72rem; font-weight: 500; opacity: 0.85; text-transform: none; letter-spacing: 0; }
+        .model-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
         .tables-section { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-radius: 15px; padding: 30px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         .tables-title { font-size: 1.4rem; font-weight: 600; color: #2c3e50; margin-bottom: 20px; text-align: center; }
         .tables-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
@@ -127,6 +152,7 @@
             .tables-grid      { grid-template-columns: 1fr; }
             .chart-wrapper    { height: 400px; }
             .chart-controls   { flex-direction: column; gap: 10px; }
+            .model-btn        { min-width: 120px; }
         }
     </style>
 </head>
@@ -134,20 +160,21 @@
 <div class="container">
 
     <div class="header">
-        <h1>🌬️ AROME + ECMWF + GFS Hybrid Wind Analysis</h1>
-        <p>AROME surface data where available; automatic ECMWF fallback for locations outside AROME coverage</p>
+        <h1>🌬️ AROME + ECMWF + ICON + GFS Wind Analysis</h1>
+        <p>Fetch all three surface models at once, then toggle between them to compare</p>
         <div class="enhanced-notice">
-            📡 <strong>Smart Model Selection:</strong>
-            AROME (Météo-France HD, 1.5 km) is used for surface wind data where available.
-            For locations outside AROME coverage the tool automatically falls back to
-            <strong>ECMWF IFS (9 km)</strong> and the wind table columns adjust accordingly.
+            📡 <strong>Multi-Model Comparison:</strong>
+            Analyze your locations once, then switch between
+            <strong>AROME</strong>, <strong>ECMWF</strong> and <strong>ICON</strong> with the model buttons —
+            the tables and charts re-render for the selected model, using each model's own forecast heights.
         </div>
         <div class="fix-details">
-            <strong>Data Sources &amp; Logic:</strong><br>
-            1. 🟢 <strong>AROME (primary):</strong> 10 m · 20 m · 50 m — table shows <em>Wind Dir / 10 m / 20 m / 50 m</em><br>
-            2. 🔵 <strong>ECMWF (fallback):</strong> 10 m · 100 m · 200 m — table switches to <em>Wind Dir / 10 m / 100 m / 200 m</em><br>
-            3. 🌍 <strong>GFS (always):</strong> Pressure levels 975–750 hPa + Planetary Boundary Layer height<br>
-            4. 🕐 <strong>Timezone:</strong> All times display in the selected timezone
+            <strong>Data Sources &amp; Heights:</strong><br>
+            1. 🟢 <strong>AROME (Météo-France, 1.5 km):</strong> 10 · 20 · 50 · 100 · 150 · 200 m<br>
+            2. 🔵 <strong>ECMWF IFS (9 km):</strong> 10 · 100 · 200 m<br>
+            3. 🟣 <strong>ICON (DWD seamless):</strong> 10 · 80 · 120 · 180 m<br>
+            4. 🌍 <strong>GFS (NOAA, always on):</strong> Pressure levels 975–750 hPa + Planetary Boundary Layer height<br>
+            5. 🕐 <strong>Timezone:</strong> All times display in the selected timezone
         </div>
     </div>
 
@@ -202,13 +229,14 @@
     <!-- CONTROLS -->
     <div class="control-section">
         <div style="background:#2ecc71;color:white;padding:15px;border-radius:8px;margin-bottom:20px;">
-            <strong>🌐 ENHANCED HYBRID WIND ANALYSIS:</strong> Combining the best of high-resolution and global models for comprehensive vertical wind analysis.
+            <strong>🌐 MULTI-MODEL WIND ANALYSIS:</strong> AROME, ECMWF and ICON are all fetched for every location, then compared side by side via the model toggle.
             <br><br>
             <strong>Data Sources:</strong>
             <ul style="margin:10px 0 0 20px;">
-                <li><strong>AROME (Météo-France):</strong> 10 m / 20 m / 50 m surface wind at 1.5 km resolution — used when available</li>
-                <li><strong>ECMWF IFS:</strong> 10 m / 100 m / 200 m surface wind at 9 km resolution — automatic fallback outside AROME coverage</li>
-                <li><strong>GFS (NOAA):</strong> Pressure level wind data (975–750 hPa) + boundary layer height</li>
+                <li><strong>AROME (Météo-France):</strong> 10 / 20 / 50 / 100 / 150 / 200 m wind at 1.5 km resolution</li>
+                <li><strong>ECMWF IFS:</strong> 10 / 100 / 200 m wind at 9 km resolution</li>
+                <li><strong>ICON (DWD seamless):</strong> 10 / 80 / 120 / 180 m wind (auto-blends ICON-D2 / EU / Global)</li>
+                <li><strong>GFS (NOAA):</strong> Pressure level wind (975–750 hPa) + boundary layer height — always shown</li>
                 <li><strong>Theoretical Profile:</strong> Logarithmic wind profile for sea conditions (z₀ = 0.2 mm)</li>
             </ul>
         </div>
@@ -232,10 +260,19 @@
 
     <div class="loading">
         <div class="spinner"></div>
-        <div>Fetching hybrid AROME / ECMWF + GFS wind data…</div>
-        <div style="font-size:0.9rem;margin-top:10px;opacity:0.8;">Times will be displayed in your selected timezone</div>
+        <div>Fetching AROME / ECMWF / ICON + GFS wind data…</div>
+        <div style="font-size:0.9rem;margin-top:10px;opacity:0.8;">All three models are fetched so you can switch instantly</div>
     </div>
     <div class="error"><div id="error-message"></div></div>
+
+    <!-- MODEL SELECTOR (shown after analysis) -->
+    <div class="model-selector-section" id="model-selector">
+        <div class="model-selector-title">
+            🧭 Wind Model
+            <span class="model-selector-sub">— switch to compare; tables &amp; charts update (PBL height stays GFS)</span>
+        </div>
+        <div class="model-btn-group" id="model-btn-group"></div>
+    </div>
 
     <!-- HOURLY TABLES -->
     <div class="tables-section">
@@ -281,7 +318,7 @@
             <div class="comparison-grid" id="comparison-grid"></div>
         </div>
         <div class="chart-container">
-            <div class="chart-title">🌬️ Wind Speed Comparison – All Locations</div>
+            <div class="chart-title" id="comparison-chart-title">🌬️ Wind Speed Comparison – All Locations</div>
             <div class="chart-wrapper"><div id="windComparisonChart"></div></div>
         </div>
         <div class="chart-container">
@@ -312,6 +349,42 @@
     let selectedVerticalProfileTimeIndex = 0;
     let availableTimes = [];
     let selectedTimezone = 'UTC';
+    let activeModel = 'AROME';
+
+    // ── MODEL DEFINITIONS ────────────────────────────────────────────────────────
+    // heights      = all wind heights requested / shown in the vertical profile
+    // tableCols    = the 3 speed columns shown in the hourly table (always starts with 10 m)
+    // upperHeight  = the "upper" dashed series on the wind-speed comparison chart
+    const MODELS = {
+        AROME: {
+            key: 'AROME', label: 'AROME', subtitle: 'Météo-France 1.5 km',
+            badgeClass: 'badge-arome', color: '#2e7d32',
+            endpoint: 'https://api.open-meteo.com/v1/meteofrance',
+            modelParam: 'meteofrance_arome_france_hd',
+            heights: [10, 20, 50, 100, 150, 200],
+            tableCols: [10, 20, 50],
+            upperHeight: 50
+        },
+        ECMWF: {
+            key: 'ECMWF', label: 'ECMWF', subtitle: 'IFS 9 km',
+            badgeClass: 'badge-ecmwf', color: '#1565c0',
+            endpoint: 'https://api.open-meteo.com/v1/ecmwf',
+            modelParam: null,
+            heights: [10, 100, 200],
+            tableCols: [10, 100, 200],
+            upperHeight: 100
+        },
+        ICON: {
+            key: 'ICON', label: 'ICON', subtitle: 'DWD seamless',
+            badgeClass: 'badge-icon', color: '#ad1457',
+            endpoint: 'https://api.open-meteo.com/v1/dwd-icon',
+            modelParam: 'icon_seamless',
+            heights: [10, 80, 120, 180],
+            tableCols: [10, 80, 180],
+            upperHeight: 120
+        }
+    };
+    const MODEL_ORDER = ['AROME', 'ECMWF', 'ICON'];
 
     // ── MAP ──────────────────────────────────────────────────────────────────────
 
@@ -415,12 +488,31 @@
 
     function kmhToKnots(kmh) { return kmh * 0.539957; }
 
+    // Does a model's hourly block contain at least one valid 10 m wind value?
+    function hasValidSpeed(hourly) {
+        const s = hourly && hourly.wind_speed_10m;
+        return !!(s && s.some(v => v !== null && v !== undefined && v > 0));
+    }
+
+    // Active model's surface data object for a location (or null)
+    function activeSurface(locationNum) {
+        const loc = windData[locationNum];
+        return (loc && loc.surfaceByModel && loc.surfaceByModel[activeModel]) || null;
+    }
+
+    // Does any selected location have valid data for the given model?
+    function modelHasAnyData(modelKey) {
+        return Object.values(windData).some(d =>
+            d.surfaceByModel[modelKey] && hasValidSpeed(d.surfaceByModel[modelKey].hourly));
+    }
+
     // ── UI HELPERS ───────────────────────────────────────────────────────────────
 
     function showLoading() {
         document.querySelector('.loading').classList.add('show');
         document.querySelector('.error').classList.remove('show');
         document.getElementById('results').style.display = 'none';
+        document.getElementById('model-selector').classList.remove('show');
         document.querySelector('.fetch-btn').disabled = true;
     }
     function hideLoading() {
@@ -434,7 +526,38 @@
     }
     function showResults() {
         document.getElementById('results').style.display = 'block';
+        document.getElementById('model-selector').classList.add('show');
         hideLoading();
+    }
+
+    // ── MODEL SELECTOR ───────────────────────────────────────────────────────────
+
+    function renderModelButtons() {
+        const group = document.getElementById('model-btn-group');
+        group.innerHTML = '';
+        MODEL_ORDER.forEach(key => {
+            const m = MODELS[key];
+            const hasData = modelHasAnyData(key);
+            const btn = document.createElement('button');
+            btn.className = 'model-btn' + (activeModel === key ? ' active' : '');
+            btn.dataset.model = key;
+            btn.disabled = !hasData;
+            const sub = hasData ? m.subtitle : 'no data here';
+            btn.innerHTML = `<span>${m.label}</span><span class="model-btn-sub">${sub}</span>`;
+            btn.onclick = () => setActiveModel(key);
+            group.appendChild(btn);
+        });
+    }
+
+    function setActiveModel(key) {
+        if (!MODELS[key] || !modelHasAnyData(key)) return;
+        activeModel = key;
+        renderModelButtons();
+        // Re-render everything that depends on the surface model (NOT the GFS PBL chart)
+        generateWindTables();
+        createLocationSummaries();
+        createWindComparisonChart();
+        createWindProfileChart();
     }
 
     // ── TIME SELECTOR ────────────────────────────────────────────────────────────
@@ -480,27 +603,46 @@
         try {
             for (const [locationNum, coords] of Object.entries(selectedLocations)) {
                 console.log(`📍 Fetching Location ${locationNum}: ${coords.lat.toFixed(4)}, ${coords.lon.toFixed(4)}`);
-                try {
-                    const data = await fetchLocationWindData(coords.lat, coords.lon, date, timezone, locationNum);
-                    windData[locationNum] = { ...data, locationNum, coords };
-                    console.log(`✅ Location ${locationNum} – surface model: ${data.surfaceModel}`);
-                    if (Object.keys(selectedLocations).length > 1)
-                        await new Promise(r => setTimeout(r, 500));
-                } catch (err) {
-                    console.error(`❌ Location ${locationNum} failed:`, err);
+
+                const surfaceByModel = {};
+                for (const modelKey of MODEL_ORDER) {
+                    surfaceByModel[modelKey] =
+                        await fetchSurfaceModel(modelKey, coords.lat, coords.lon, timezone, locationNum);
+                    await new Promise(r => setTimeout(r, 350)); // be gentle on rate limits
                 }
+
+                const gfs = await fetchGFSPressureLevelData(coords.lat, coords.lon, timezone, locationNum);
+
+                // elevation: first model that returned data, else GFS
+                let elevation = 0;
+                for (const k of MODEL_ORDER) {
+                    if (surfaceByModel[k] && surfaceByModel[k].elevation != null) {
+                        elevation = surfaceByModel[k].elevation; break;
+                    }
+                }
+                if (!elevation && gfs && gfs.elevation != null) elevation = gfs.elevation;
+
+                windData[locationNum] = { coords, locationNum, surfaceByModel, gfs, elevation };
+
+                const got = MODEL_ORDER.filter(k => surfaceByModel[k]).join(', ') || 'none';
+                console.log(`✅ Location ${locationNum} – models with data: ${got}`);
+
+                if (Object.keys(selectedLocations).length > 1)
+                    await new Promise(r => setTimeout(r, 400));
             }
 
-            const first = Object.values(windData)[0];
-            if (first && first.hourly.time) {
-                availableTimes = first.hourly.time;
-                populateTimeSelector();
-            }
+            // Pick the default active model: first (AROME→ECMWF→ICON) that has any data
+            activeModel = MODEL_ORDER.find(k => modelHasAnyData(k)) || 'AROME';
+
+            // Build the shared time axis (all endpoints share the same hourly grid)
+            availableTimes = deriveAvailableTimes();
+            populateTimeSelector();
 
             const tzLabel = selectedTimezone === 'UTC' ? 'UTC' : selectedTimezone;
             document.getElementById('tables-title').textContent =
                 `📊 Hourly Wind Tables (08:00 – 18:00 ${tzLabel})`;
 
+            renderModelButtons();
             generateWindTables();
             displayComparison();
             showResults();
@@ -511,100 +653,42 @@
         }
     }
 
-    // ── PER-LOCATION FETCH: AROME → ECMWF fallback ───────────────────────────────
-
-    async function fetchLocationWindData(latitude, longitude, date, timezone, locationNum) {
-        // 1. Try AROME first
-        const aromeResult = await tryFetchArome(latitude, longitude, timezone, locationNum);
-
-        let surfaceData, surfaceModel;
-        if (aromeResult.success) {
-            surfaceData  = aromeResult.data;
-            surfaceModel = 'AROME';
-            console.log(`✅ Loc ${locationNum}: AROME succeeded`);
-        } else {
-            // 2. Fallback to ECMWF
-            console.warn(`⚠️ Loc ${locationNum}: AROME unavailable – trying ECMWF fallback`);
-            const ecmwfResult = await tryFetchECMWF(latitude, longitude, timezone, locationNum);
-            if (!ecmwfResult.success)
-                throw new Error(`Both AROME and ECMWF failed for Location ${locationNum}`);
-            surfaceData  = ecmwfResult.data;
-            surfaceModel = 'ECMWF';
-            console.log(`✅ Loc ${locationNum}: ECMWF fallback succeeded`);
+    function deriveAvailableTimes() {
+        const first = Object.values(windData)[0];
+        if (!first) return [];
+        for (const k of MODEL_ORDER) {
+            const s = first.surfaceByModel[k];
+            if (s && s.hourly && s.hourly.time && s.hourly.time.length) return s.hourly.time;
         }
-
-        // 3. GFS pressure levels (always)
-        const gfsData = await fetchGFSPressureLevelData(latitude, longitude, timezone, locationNum);
-
-        // 4. Merge and tag
-        const merged = {
-            ...surfaceData,
-            hourly: { ...surfaceData.hourly, ...gfsData.hourly }
-        };
-        merged.surfaceModel = surfaceModel;
-        return merged;
+        if (first.gfs && first.gfs.hourly && first.gfs.hourly.time) return first.gfs.hourly.time;
+        return [];
     }
 
-    // ── AROME ────────────────────────────────────────────────────────────────────
+    // ── GENERIC SURFACE MODEL FETCH ──────────────────────────────────────────────
 
-    async function tryFetchArome(latitude, longitude, timezone, locationNum) {
-        const params = [
-            'wind_speed_10m','wind_direction_10m',
-            'wind_speed_20m','wind_direction_20m',
-            'wind_speed_50m','wind_direction_50m',
-            'wind_speed_100m','wind_direction_100m',
-            'wind_speed_150m','wind_direction_150m',
-            'wind_speed_200m','wind_direction_200m'
-        ];
-        const url = `https://api.open-meteo.com/v1/meteofrance?` +
-            `latitude=${latitude}&longitude=${longitude}` +
-            `&hourly=${params.join(',')}` +
-            `&wind_speed_unit=kmh&timezone=${timezone}&forecast_days=2` +
-            `&models=meteofrance_arome_france_hd`;
+    async function fetchSurfaceModel(modelKey, latitude, longitude, timezone, locationNum) {
+        const m = MODELS[modelKey];
+        const params = [];
+        m.heights.forEach(h => { params.push(`wind_speed_${h}m`, `wind_direction_${h}m`); });
 
-        try {
-            const res = await fetch(url);
-            if (!res.ok) { console.warn(`🏠 AROME HTTP ${res.status} Loc ${locationNum}`); return { success: false }; }
-            const data = await res.json();
-            const sample = data.hourly && data.hourly.wind_speed_10m;
-            const hasValid = sample && sample.some(v => v !== null && v !== undefined && v > 0);
-            if (!hasValid) { console.warn(`🏠 AROME no valid data Loc ${locationNum}`); return { success: false }; }
-            return { success: true, data };
-        } catch (err) {
-            console.warn(`🏠 AROME exception Loc ${locationNum}:`, err.message);
-            return { success: false };
-        }
-    }
-
-    // ── ECMWF FALLBACK ───────────────────────────────────────────────────────────
-
-    async function tryFetchECMWF(latitude, longitude, timezone, locationNum) {
-        const params = [
-            'wind_speed_10m','wind_direction_10m',
-            'wind_speed_100m','wind_direction_100m',
-            'wind_speed_200m','wind_direction_200m'
-        ];
-        const url = `https://api.open-meteo.com/v1/ecmwf?` +
-            `latitude=${latitude}&longitude=${longitude}` +
+        let url = `${m.endpoint}?latitude=${latitude}&longitude=${longitude}` +
             `&hourly=${params.join(',')}` +
             `&wind_speed_unit=kmh&timezone=${timezone}&forecast_days=2`;
+        if (m.modelParam) url += `&models=${m.modelParam}`;
 
-        console.log(`🔵 ECMWF URL Loc ${locationNum}:`, url);
         try {
             const res = await fetch(url);
-            if (!res.ok) { console.warn(`🔵 ECMWF HTTP ${res.status} Loc ${locationNum}`); return { success: false }; }
+            if (!res.ok) { console.warn(`${modelKey} HTTP ${res.status} Loc ${locationNum}`); return null; }
             const data = await res.json();
-            const sample = data.hourly && data.hourly.wind_speed_10m;
-            const hasValid = sample && sample.some(v => v !== null && v !== undefined && v > 0);
-            if (!hasValid) { console.warn(`🔵 ECMWF no valid data Loc ${locationNum}`); return { success: false }; }
-            return { success: true, data };
+            if (!hasValidSpeed(data.hourly)) { console.warn(`${modelKey} no valid data Loc ${locationNum}`); return null; }
+            return data;
         } catch (err) {
-            console.warn(`🔵 ECMWF exception Loc ${locationNum}:`, err.message);
-            return { success: false };
+            console.warn(`${modelKey} exception Loc ${locationNum}:`, err.message);
+            return null;
         }
     }
 
-    // ── GFS PRESSURE LEVELS ──────────────────────────────────────────────────────
+    // ── GFS PRESSURE LEVELS (always) ─────────────────────────────────────────────
 
     async function fetchGFSPressureLevelData(latitude, longitude, timezone, locationNum) {
         const params = [
@@ -636,58 +720,50 @@
     // ── WIND TABLES ──────────────────────────────────────────────────────────────
 
     function generateWindTables() {
-        Object.entries(windData).forEach(([n, d]) => createWindTable(n, d));
+        Object.keys(windData).forEach(n => createWindTable(n));
     }
 
-    function createWindTable(locationNum, data) {
+    function createWindTable(locationNum) {
         const tableContainer = document.getElementById(`wind-table-${locationNum}`);
         const tableHeader    = document.getElementById(`table-header-${locationNum}`);
+        const m              = MODELS[activeModel];
+        const emojis         = { 1: '🔴', 2: '🟢', 3: '🟠' };
+        const modelTag       = `<span class="model-badge ${m.badgeClass}">${m.label}</span>`;
+        tableHeader.innerHTML = `${emojis[locationNum] || ''} Location ${locationNum} – Wind Forecast ${modelTag}`;
 
-        // ── Determine column layout based on the surface model actually used ─────
-        //
-        //   AROME (default) → columns: 10m | 20m | 50m
-        //   ECMWF (fallback)→ columns: 10m | 100m | 200m
-        //
-        const isECMWF = data.surfaceModel === 'ECMWF';
+        const surf = activeSurface(locationNum);
+        if (!surf || !hasValidSpeed(surf.hourly)) {
+            tableContainer.innerHTML = `
+                <div class="placeholder-table">
+                    <div class="placeholder-table-icon">🚫</div>
+                    <div class="placeholder-table-text">No ${m.label} data here</div>
+                    <div class="placeholder-table-subtext">${m.label} doesn't cover this location — try another model above</div>
+                </div>`;
+            return;
+        }
 
-        // Update the table card header to show which model is in use
-        const emojis   = { 1: '🔴', 2: '🟢', 3: '🟠' };
-        const modelTag = isECMWF
-            ? '<span class="model-badge badge-ecmwf">ECMWF</span>'
-            : '<span class="model-badge badge-arome">AROME</span>';
-        tableHeader.innerHTML =
-            `${emojis[locationNum] || ''} Location ${locationNum} – Wind Forecast ${modelTag}`;
+        const hourly = surf.hourly;
+        const cols   = m.tableCols; // [10, c2, c3]
 
-        // Column definitions – only change cols 2 & 3 when ECMWF is active
-        const col2 = isECMWF
-            ? { label: 'Wind Speed<br>100m (kt)', param: 'wind_speed_100m' }
-            : { label: 'Wind Speed<br>20m (kt)',  param: 'wind_speed_20m'  };
-        const col3 = isECMWF
-            ? { label: 'Wind Speed<br>200m (kt)', param: 'wind_speed_200m' }
-            : { label: 'Wind Speed<br>50m (kt)',  param: 'wind_speed_50m'  };
-
-        // Filter to 08:00–18:00 in the selected timezone
-        const hourlyData = [];
-        data.hourly.time.forEach((timeStr, index) => {
+        const rows = [];
+        hourly.time.forEach((timeStr, index) => {
             const date = new Date(timeStr);
             const hour = parseInt(
                 date.toLocaleString('en-GB', { timeZone: selectedTimezone, hour: '2-digit', hour12: false }),
                 10
             );
             if (hour >= 8 && hour <= 18) {
-                hourlyData.push({
+                rows.push({
                     timeString: date.toLocaleTimeString('en-GB', {
                         hour: '2-digit', minute: '2-digit', timeZone: selectedTimezone
                     }),
-                    windDir:   data.hourly.wind_direction_10m?.[index] ?? '--',
-                    speed10m:  data.hourly.wind_speed_10m?.[index]     ?? '--',
-                    speedCol2: data.hourly[col2.param]?.[index]        ?? '--',
-                    speedCol3: data.hourly[col3.param]?.[index]        ?? '--'
+                    windDir: hourly.wind_direction_10m?.[index] ?? '--',
+                    speeds:  cols.map(h => hourly[`wind_speed_${h}m`]?.[index] ?? '--')
                 });
             }
         });
 
-        if (!hourlyData.length) {
+        if (!rows.length) {
             tableContainer.innerHTML = `
                 <div class="placeholder-table">
                     <div class="placeholder-table-icon">❌</div>
@@ -698,32 +774,26 @@
         }
 
         const tzLabel = selectedTimezone === 'UTC' ? 'UTC' : selectedTimezone;
-
         let html = `
             <table class="wind-table">
                 <thead>
                     <tr>
                         <th>Time<br>(${tzLabel})</th>
                         <th>Wind Dir<br>10m (°)</th>
-                        <th>Wind Speed<br>10m (kt)</th>
-                        <th>${col2.label}</th>
-                        <th>${col3.label}</th>
+                        ${cols.map(h => `<th>Wind Speed<br>${h}m (kt)</th>`).join('')}
                     </tr>
                 </thead>
                 <tbody>`;
 
-        hourlyData.forEach(row => {
-            const s10  = row.speed10m  !== '--' ? kmhToKnots(row.speed10m).toFixed(1)  : '--';
-            const sC2  = row.speedCol2 !== '--' ? kmhToKnots(row.speedCol2).toFixed(1) : '--';
-            const sC3  = row.speedCol3 !== '--' ? kmhToKnots(row.speedCol3).toFixed(1) : '--';
-            const dir  = row.windDir   !== '--' ? Math.round(row.windDir).toString().padStart(3,'0') : '--';
+        rows.forEach(row => {
+            const dir = row.windDir !== '--' ? Math.round(row.windDir).toString().padStart(3, '0') : '--';
+            const speedCells = row.speeds.map(s =>
+                `<td>${s !== '--' ? kmhToKnots(s).toFixed(1) : '--'}</td>`).join('');
             html += `
                     <tr>
                         <td class="time-cell">${row.timeString}</td>
                         <td>${dir}</td>
-                        <td>${s10}</td>
-                        <td>${sC2}</td>
-                        <td>${sC3}</td>
+                        ${speedCells}
                     </tr>`;
         });
 
@@ -737,21 +807,32 @@
         createLocationSummaries();
         createWindComparisonChart();
         createWindProfileChart();
-        createBoundaryLayerChart();
+        createBoundaryLayerChart(); // GFS-only, rendered once (not model-dependent)
     }
 
     function createLocationSummaries() {
         const grid = document.getElementById('comparison-grid');
         grid.innerHTML = '';
         const names = { 1:'🔴 Location 1', 2:'🟢 Location 2', 3:'🟠 Location 3' };
+        const m = MODELS[activeModel];
 
         Object.entries(windData).forEach(([locationNum, data]) => {
-            const valid = (data.hourly.wind_speed_10m || []).filter(s => s != null);
-            if (!valid.length) return;
+            const surf = data.surfaceByModel[activeModel];
+            const modelTag = `<span class="model-badge ${m.badgeClass}">${m.label}</span>`;
+
+            if (!surf || !hasValidSpeed(surf.hourly)) {
+                const el = document.createElement('div');
+                el.className = `location-summary location-${locationNum}`;
+                el.innerHTML = `
+                    <div class="location-title">${names[locationNum]} ${modelTag}</div>
+                    <div class="location-coords">${decimalToDMS(data.coords.lat,false)}, ${decimalToDMS(data.coords.lon,true)}</div>
+                    <div style="color:#7f8c8d;font-size:0.9rem;padding:8px 0;">No ${m.label} data for this location.</div>`;
+                grid.appendChild(el);
+                return;
+            }
+
+            const valid = (surf.hourly.wind_speed_10m || []).filter(s => s != null);
             const avg = valid.reduce((a,b) => a+b, 0) / valid.length;
-            const modelTag = data.surfaceModel === 'ECMWF'
-                ? '<span class="model-badge badge-ecmwf">ECMWF</span>'
-                : '<span class="model-badge badge-arome">AROME</span>';
             const el = document.createElement('div');
             el.className = `location-summary location-${locationNum}`;
             el.innerHTML = `
@@ -771,15 +852,18 @@
         const traces = [];
         const colors = { 1:'#e74c3c', 2:'#27ae60', 3:'#f39c12' };
         const names  = { 1:'🔴 Location 1', 2:'🟢 Location 2', 3:'🟠 Location 3' };
+        const m = MODELS[activeModel];
+        const upParam = `wind_speed_${m.upperHeight}m`;
+
+        document.getElementById('comparison-chart-title').textContent =
+            `🌬️ Wind Speed Comparison – All Locations (${m.label})`;
 
         Object.entries(windData).forEach(([locationNum, data]) => {
-            const times = data.hourly.time.map(t => new Date(t));
-            const s10   = data.hourly.wind_speed_10m;
-            // Upper speed series: 50m for AROME, 100m for ECMWF
-            const isECMWF  = data.surfaceModel === 'ECMWF';
-            const upParam  = isECMWF ? 'wind_speed_100m' : 'wind_speed_50m';
-            const upLabel  = isECMWF ? '100m' : '50m';
-            const upSpeeds = data.hourly[upParam];
+            const surf = data.surfaceByModel[activeModel];
+            if (!surf || !hasValidSpeed(surf.hourly)) return;
+            const times    = surf.hourly.time.map(t => new Date(t));
+            const s10      = surf.hourly.wind_speed_10m;
+            const upSpeeds = surf.hourly[upParam];
 
             if (s10) traces.push({
                 x: times, y: s10.map(s => s != null ? kmhToKnots(s) : null),
@@ -791,14 +875,20 @@
             if (upSpeeds) traces.push({
                 x: times, y: upSpeeds.map(s => s != null ? kmhToKnots(s) : null),
                 type: 'scatter', mode: 'lines',
-                name: `${names[locationNum]} (${upLabel})`,
+                name: `${names[locationNum]} (${m.upperHeight}m)`,
                 line: { color: colors[locationNum], width: 2, dash: 'dash' },
                 connectgaps: true
             });
         });
 
+        if (!traces.length) {
+            document.getElementById('windComparisonChart').innerHTML =
+                `<div class="placeholder-content"><div class="placeholder-icon">❌</div><div class="placeholder-text">No ${m.label} data to compare</div></div>`;
+            return;
+        }
+
         Plotly.newPlot('windComparisonChart', traces, {
-            title: 'Wind Speed Comparison Over Time',
+            title: `Wind Speed Comparison Over Time (${m.label})`,
             xaxis: { title: 'Time', type: 'date' },
             yaxis: { title: 'Wind Speed (knots)', rangemode: 'tozero' },
             hovermode: 'x unified', legend: { orientation: 'h', y: -0.15 },
@@ -817,20 +907,9 @@
         const colors      = { 1:'#e74c3c', 2:'#27ae60', 3:'#f39c12' };
         const theoryColors= { 1:'#f1c0c0', 2:'#c0f1c0', 3:'#f1e0c0' };
         const names       = { 1:'🔴 Location 1', 2:'🟢 Location 2', 3:'🟠 Location 3' };
+        const m           = MODELS[activeModel];
 
-        const aromeSurfaceLevels = [
-            { name:'10m',  param:'wind_speed_10m',  altitude:10  },
-            { name:'20m',  param:'wind_speed_20m',  altitude:20  },
-            { name:'50m',  param:'wind_speed_50m',  altitude:50  },
-            { name:'100m', param:'wind_speed_100m', altitude:100 },
-            { name:'150m', param:'wind_speed_150m', altitude:150 },
-            { name:'200m', param:'wind_speed_200m', altitude:200 }
-        ];
-        const ecmwfSurfaceLevels = [
-            { name:'10m',  param:'wind_speed_10m',  altitude:10  },
-            { name:'100m', param:'wind_speed_100m', altitude:100 },
-            { name:'200m', param:'wind_speed_200m', altitude:200 }
-        ];
+        const surfaceLevels = m.heights.map(h => ({ name: `${h}m`, param: `wind_speed_${h}m`, altitude: h }));
         const pressureLevels = [
             { name:'975hPa', param:'wind_speed_975hPa', altitude:pressureToAltitude(975) },
             { name:'950hPa', param:'wind_speed_950hPa', altitude:pressureToAltitude(950) },
@@ -845,21 +924,26 @@
         ];
 
         Object.entries(windData).forEach(([locationNum, data]) => {
-            const isECMWF = data.surfaceModel === 'ECMWF';
-            const surfLevels = isECMWF ? ecmwfSurfaceLevels : aromeSurfaceLevels;
-            const allLevels  = [...surfLevels, ...pressureLevels];
-            const modelTag   = isECMWF ? ' [ECMWF]' : ' [AROME]';
+            const surf = data.surfaceByModel[activeModel];
+            const gfsHourly = (data.gfs && data.gfs.hourly) || {};
+            const modelTag  = ` [${m.label}]`;
 
             const profileData = [];
-            allLevels.forEach(lv => {
-                const spd = data.hourly[lv.param]?.[selectedVerticalProfileTimeIndex];
+
+            // Surface levels from the active model
+            if (surf && surf.hourly) {
+                surfaceLevels.forEach(lv => {
+                    const spd = surf.hourly[lv.param]?.[selectedVerticalProfileTimeIndex];
+                    if (spd != null && spd > 0) {
+                        profileData.push({ name: lv.name, altitude: Math.max(lv.altitude, 1), speed: kmhToKnots(spd), source: m.label });
+                    }
+                });
+            }
+            // Pressure levels always from GFS
+            pressureLevels.forEach(lv => {
+                const spd = gfsHourly[lv.param]?.[selectedVerticalProfileTimeIndex];
                 if (spd != null && spd > 0) {
-                    profileData.push({
-                        name: lv.name,
-                        altitude: Math.max(lv.altitude, 1),
-                        speed: kmhToKnots(spd),
-                        source: pressureLevels.find(p => p.name === lv.name) ? 'GFS' : data.surfaceModel
-                    });
+                    profileData.push({ name: lv.name, altitude: Math.max(lv.altitude, 1), speed: kmhToKnots(spd), source: 'GFS' });
                 }
             });
 
@@ -881,8 +965,8 @@
                 });
             }
 
-            // Theoretical log profile
-            const w10 = data.hourly.wind_speed_10m?.[selectedVerticalProfileTimeIndex];
+            // Theoretical log profile from the active model's 10 m wind
+            const w10 = surf && surf.hourly && surf.hourly.wind_speed_10m?.[selectedVerticalProfileTimeIndex];
             if (w10 && w10 > 0) {
                 const theory = calculateTheoreticalSeaProfile(w10);
                 traces.push({
@@ -913,7 +997,7 @@
         }) + (selectedTimezone === 'UTC' ? ' UTC' : ` (${selectedTimezone})`);
 
         Plotly.newPlot('windProfileChart', traces, {
-            title: `Vertical Wind Profile – ${timeLabel}`,
+            title: `Vertical Wind Profile (${m.label} + GFS) – ${timeLabel}`,
             xaxis: { title: 'Wind Speed (knots)', rangemode: 'tozero', gridcolor: 'rgba(200,200,200,0.3)' },
             yaxis: { title: 'Altitude (meters)', type: 'log', gridcolor: 'rgba(200,200,200,0.3)', tickformat: '.0f' },
             hovermode: 'closest', legend: { x: 0.02, y: 0.98 },
@@ -929,18 +1013,20 @@
         let hasData  = false;
 
         Object.entries(windData).forEach(([locationNum, data]) => {
-            const blh = data.hourly.boundary_layer_height;
+            const gfsHourly = (data.gfs && data.gfs.hourly) || {};
+            const blh  = gfsHourly.boundary_layer_height;
+            const time = gfsHourly.time || [];
             if (blh && blh.some(h => h != null && h > 0)) {
                 hasData = true;
                 traces.push({
-                    x: data.hourly.time.map(t => new Date(t)), y: blh,
+                    x: time.map(t => new Date(t)), y: blh,
                     type: 'scatter', mode: 'lines+markers',
                     name: names[locationNum],
                     line: { color: colors[locationNum], width: 3 },
                     marker: { size: 6 }, connectgaps: true,
                     text: blh.map((h, i) => h && h > 0
                         ? `<b>${names[locationNum]}</b><br>` +
-                          `Time: ${new Date(data.hourly.time[i]).toLocaleTimeString('en-GB',{timeZone:selectedTimezone,hour:'2-digit',minute:'2-digit'})} (${selectedTimezone})<br>` +
+                          `Time: ${new Date(time[i]).toLocaleTimeString('en-GB',{timeZone:selectedTimezone,hour:'2-digit',minute:'2-digit'})} (${selectedTimezone})<br>` +
                           `PBL Height: ${Math.round(h)} m<br><i>Source: GFS</i>`
                         : null
                     ),
