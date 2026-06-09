@@ -1463,10 +1463,10 @@
                 mT.attr('cx', sx(d.temp, d.press)).attr('cy', yy);
                 mD.attr('cx', sx(d.dwpt, d.press)).attr('cy', yy);
 
-                // Black moist-adiabat from the dew point down to the surface
-                const dewPts = dewDescent(d.dwpt, d.press, P0);
+                // Black moist-adiabat from the cursor's temperature (red line) down to the surface
+                const dewPts = dewDescent(d.temp, d.press, P0);
                 dewLine.attr('d', parcelLine(dewPts));
-                const sfcTd = dewPts.length ? dewPts[dewPts.length - 1].temp : d.dwpt;
+                const sfcVal = dewPts.length ? dewPts[dewPts.length - 1].temp : d.temp;
 
                 const rows = [
                     `${Math.round(d.press)} hPa`,
@@ -1474,7 +1474,7 @@
                     `T ${d.temp.toFixed(1)}°`,
                     `Td ${d.dwpt.toFixed(1)}°`,
                     `${Math.round(d.wspd * 1.94384)}kt ${Math.round(d.wdir)}°`,
-                    `sfc Td ${Math.round(sfcTd)}°`
+                    `sfc ${Math.round(sfcVal)}°`
                 ];
                 tipText.selectAll('tspan').remove();
                 rows.forEach((r, i) => tipText.append('tspan').attr('x', 6).attr('y', 13 + i * 14).text(r));
