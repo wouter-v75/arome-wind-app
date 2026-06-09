@@ -1029,7 +1029,7 @@
             yaxis: { title: 'Wind Speed (knots)', rangemode: 'tozero' },
             hovermode: 'x unified', legend: { orientation: 'h', y: -0.15 },
             margin: { t:40, b:100 }
-        }, { responsive: true });
+        }, { responsive: true, scrollZoom: true });
     }
 
     function createWindProfileChart() {
@@ -1138,7 +1138,7 @@
             yaxis: { title: 'Altitude (meters)', type: 'log', gridcolor: 'rgba(200,200,200,0.3)', tickformat: '.0f' },
             hovermode: 'closest', legend: { x: 0.02, y: 0.98 },
             margin: { t:60, b:60, l:80, r:20 }, plot_bgcolor: 'rgba(248,249,250,0.8)'
-        }, { responsive: true });
+        }, { responsive: true, scrollZoom: true });
     }
 
     function createBoundaryLayerChart() {
@@ -1187,7 +1187,7 @@
             yaxis: { title: 'PBL Height (meters)', rangemode: 'tozero', gridcolor: 'rgba(200,200,200,0.3)' },
             hovermode: 'x unified', legend: { orientation: 'h', y: -0.15 },
             margin: { t:60, b:100 }, plot_bgcolor: 'rgba(248,249,250,0.8)'
-        }, { responsive: true });
+        }, { responsive: true, scrollZoom: true });
     }
 
     // ── MODEL COMPARISON PANE ────────────────────────────────────────────────────
@@ -1279,7 +1279,7 @@
             };
             if (cfg.isDir) { layout.yaxis.range = [0, 360]; layout.yaxis.dtick = 45; }
 
-            Plotly.newPlot(cfg.div, traces, layout, { responsive: true });
+            Plotly.newPlot(cfg.div, traces, layout, { responsive: true, scrollZoom: true });
         });
     }
 
@@ -1446,7 +1446,8 @@
         const svg = d3.select(container).append('svg')
             .attr('width', W).attr('height', H)
             .attr('viewBox', `0 0 ${W} ${H}`).style('max-width', '100%').style('height', 'auto');
-        const g = svg.append('g').attr('transform', `translate(${m.left},${m.top})`);
+        const outer = svg.append('g').attr('transform', `translate(${m.left},${m.top})`);
+        const g = outer.append('g'); // zoom/pan target — all content is appended here
 
         const clipId = 'sktxclip-' + Math.random().toString(36).slice(2, 8);
         g.append('clipPath').attr('id', clipId).append('rect').attr('width', w).attr('height', h);
@@ -1559,6 +1560,14 @@
                 const pp = parcelThrough(Ta, Pa, P0).filter(o => o.press >= SKEWT_PTOP && o.press <= P0 + 1);
                 parcelPath.attr('d', parcelLine(pp));
             });
+
+        // Dynamic zoom/pan: wheel to zoom, drag to pan, double-click to reset.
+        const zoom = d3.zoom()
+            .scaleExtent([1, 10])
+            .translateExtent([[-60, -40], [w + 100, h + 50]])
+            .on('zoom', ev => g.attr('transform', ev.transform));
+        svg.call(zoom).on('dblclick.zoom', () =>
+            svg.transition().duration(200).call(zoom.transform, d3.zoomIdentity));
     }
 
     // Pseudo-adiabatic lapse rate dT/dP (K per hPa) for a saturated parcel.
