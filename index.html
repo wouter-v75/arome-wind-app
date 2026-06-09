@@ -1357,7 +1357,7 @@
         const w = W - m.left - m.right, h = H - m.top - m.bottom;
 
         const y = d3.scaleLog().domain([SKEWT_PBOT, SKEWT_PTOP]).range([h, 0]); // 1050 bottom → 500 top
-        const x = d3.scaleLinear().domain([-45, 45]).range([0, w]);            // temperature at the base
+        const x = d3.scaleLinear().domain([-30, 40]).range([0, w]);            // temperature at the base (zoomed)
         // Width-relative skew: a level shifts right by up to ~0.55·width at the top,
         // independent of chart height, so typical (even warm) soundings stay on-screen.
         const SK = (0.55 * w) / h;
@@ -1408,7 +1408,7 @@
 
         // Temperature axis (bottom)
         g.append('g').attr('class', 'sktx-axis').attr('transform', `translate(0,${h})`)
-            .call(d3.axisBottom(x).tickValues(d3.range(-40, 41, 10)).tickFormat(d => d + '°'));
+            .call(d3.axisBottom(x).tickValues(d3.range(-30, 41, 10)).tickFormat(d => d + '°'));
         g.append('text').attr('class', 'sktx-label').attr('x', w / 2).attr('y', h + 34).attr('text-anchor', 'middle').text('Temperature (°C)');
 
         // Wind barbs on the right margin
@@ -1455,11 +1455,11 @@
                 tipText.selectAll('tspan').remove();
                 rows.forEach((r, i) => tipText.append('tspan').attr('x', 8).attr('y', 16 + i * 16).text(r));
 
-                let tx = sx(d.temp, d.press) + 12;
-                if (tx + 158 > w) tx = w - 158 - 4;
-                if (tx < 0) tx = 4;
-                let ty = yy - 62;
-                if (ty < 0) ty = yy + 10;
+                // Readout box pinned to the right edge, tracking the level vertically,
+                // clamped inside the plot so it stays visible (incl. mobile).
+                const boxW = 158, boxH = 56;
+                const tx = Math.max(2, w - boxW - 4);
+                const ty = Math.max(2, Math.min(yy - boxH / 2, h - boxH - 2));
                 tipG.attr('transform', `translate(${tx},${ty})`);
 
                 // Dynamic parcel anchored at the exact cursor point:
