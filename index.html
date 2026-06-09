@@ -22,7 +22,7 @@
         .sktx-axis path, .sktx-axis line { stroke: #95a5a6; }
         .sktx-barb { stroke: #2c3e50; stroke-width: 1px; fill: #2c3e50; }
         .sktx-label { font-size: 10px; fill: #7f8c8d; }
-        .sktx-cursorline { stroke: #27ae60; stroke-width: 1.2px; stroke-dasharray: 2 3; }
+        .sktx-cursorline { stroke: #7f8c8d; stroke-width: 1px; stroke-dasharray: 2 3; }
         .sktx-marker-temp { fill: #e74c3c; }
         .sktx-marker-dwpt { fill: #2980b9; }
         .sktx-tip { font-size: 11px; fill: #2c3e50; }
@@ -1403,12 +1403,8 @@
         plot.append('path').datum(data).attr('class', 'sktx-dwpt')
             .attr('d', d3.line().x(d => sx(d.dwpt, d.press)).y(d => y(d.press)));
 
-        // Lifted surface parcel: dry adiabat to the LCL, then moist adiabat above
-        const parcel = computeParcel(data);
-        if (parcel && parcel.length > 1) {
-            plot.append('path').datum(parcel).attr('class', 'sktx-parcel')
-                .attr('d', d3.line().x(d => sx(d.temp, d.press)).y(d => y(d.press)));
-        }
+        // Dynamic lifted parcel — drawn on hover, anchored at the cursor point
+        const parcelPath = plot.append('path').attr('class', 'sktx-parcel').style('display', 'none');
 
         // Temperature axis (bottom)
         g.append('g').attr('class', 'sktx-axis').attr('transform', `translate(0,${h})`)
@@ -1432,15 +1428,20 @@
         const tipBox = tipG.append('rect').attr('class', 'sktx-tip-box').attr('rx', 4).attr('width', 158).attr('height', 56);
         const tipText = tipG.append('text').attr('class', 'sktx-tip');
 
+        const P0 = data[0].press; // surface (highest-pressure level)
+        const parcelLine = d3.line().x(o => sx(o.temp, o.press)).y(o => y(o.press));
+
         g.append('rect').attr('width', w).attr('height', h)
             .style('fill', 'none').style('pointer-events', 'all')
-            .on('mouseover', () => focus.style('display', null))
-            .on('mouseout', () => focus.style('display', 'none'))
+            .on('mouseover', () => { focus.style('display', null); parcelPath.style('display', null); })
+            .on('mouseout', () => { focus.style('display', 'none'); parcelPath.style('display', 'none'); })
             .on('mousemove', function (ev) {
-                const my = d3.pointer(ev, this)[1];
-                const p = y.invert(my);
+                const [mx, my] = d3.pointer(ev, this);
+
+                // Environmental readout snaps to the nearest data level
+                const pCursor = y.invert(my);
                 let d = data[0], best = Infinity;
-                data.forEach(o => { const diff = Math.abs(o.press - p); if (diff < best) { best = diff; d = o; } });
+                data.forEach(o => { const diff = Math.abs(o.press - pCursor); if (diff < best) { best = diff; d = o; } });
                 const yy = y(d.press);
                 hline.attr('y1', yy).attr('y2', yy);
                 mT.attr('cx', sx(d.temp, d.press)).attr('cy', yy);
@@ -1460,6 +1461,13 @@
                 let ty = yy - 62;
                 if (ty < 0) ty = yy + 10;
                 tipG.attr('transform', `translate(${tx},${ty})`);
+
+                // Dynamic parcel anchored at the exact cursor point:
+                // dry adiabat down to the surface, moist adiabat up from the cursor.
+                const Pa = Math.min(pCursor, P0);
+                const Ta = x.invert(mx - (h - y(Pa)) * SK);
+                const pp = parcelThrough(Ta, Pa, P0).filter(o => o.press >= SKEWT_PTOP && o.press <= P0 + 1);
+                parcelPath.attr('d', parcelLine(pp));
             });
     }
 
@@ -1474,32 +1482,16 @@
         return (num / den) / pHpa;                                // K/hPa
     }
 
-    // Lifted parcel from the surface (lowest level): dry adiabat → LCL → moist adiabat.
-    function computeParcel(data) {
-        const sfc = data[0];
-        if (!sfc) return null;
-        const P0 = sfc.press;
-        const T0K = sfc.temp + 273.15;
-        const Td0K = Math.min(sfc.dwpt, sfc.temp) + 273.15;
-        if (!isFinite(T0K) || !isFinite(Td0K)) return null;
-
-        // Bolton (1980) LCL temperature, then Poisson for LCL pressure (dry-adiabatic)
-        const Tlcl = 1 / (1 / (Td0K - 56) + Math.log(T0K / Td0K) / 800) + 56;
-        const Plcl = P0 * Math.pow(Tlcl / T0K, 3.504);
-        if (!isFinite(Tlcl) || !isFinite(Plcl) || Plcl <= SKEWT_PTOP) {
-            // Saturated/over the top — fall back to a pure dry adiabat to the top
-            const pts = [];
-            for (let p = P0; p >= SKEWT_PTOP; p -= 5) pts.push({ press: p, temp: T0K * Math.pow(p / P0, 0.2854) - 273.15 });
-            return pts;
-        }
-
+    // Parcel passing through an anchor point (Ta °C, Pa hPa):
+    //   below the anchor (toward the surface P0) → dry adiabat
+    //   above the anchor (toward the top)        → moist/pseudo-adiabat
+    function parcelThrough(Ta, Pa, P0) {
+        if (!isFinite(Ta) || !isFinite(Pa)) return [];
         const pts = [];
-        // Dry adiabat from surface up to the LCL
-        for (let p = P0; p > Plcl; p -= 5) pts.push({ press: p, temp: T0K * Math.pow(p / P0, 0.2854) - 273.15 });
-        pts.push({ press: Plcl, temp: Tlcl - 273.15 });
-
-        // Moist (pseudo) adiabat from the LCL to the top, stepwise integration
-        let Tk = Tlcl, p = Plcl;
+        const thetaK = (Ta + 273.15) * Math.pow(1000 / Pa, 0.2854); // potential temperature
+        for (let p = P0; p > Pa; p -= 5) pts.push({ press: p, temp: thetaK * Math.pow(p / 1000, 0.2854) - 273.15 });
+        pts.push({ press: Pa, temp: Ta });
+        let Tk = Ta + 273.15, p = Pa;
         while (p > SKEWT_PTOP) {
             const dp = Math.min(5, p - SKEWT_PTOP);
             Tk = Tk - moistLapseDtDp(Tk, p) * dp;   // p decreases by dp going up
