@@ -25,7 +25,7 @@
         .sktx-cursorline { stroke: #7f8c8d; stroke-width: 1px; stroke-dasharray: 2 3; }
         .sktx-marker-temp { fill: #e74c3c; }
         .sktx-marker-dwpt { fill: #2980b9; }
-        .sktx-tip { font-size: 11px; fill: #2c3e50; }
+        .sktx-tip { font-size: 10px; fill: #2c3e50; }
         .sktx-tip-box { fill: rgba(255,255,255,0.95); stroke: #ccc; }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1353,7 +1353,7 @@
     function drawSkewT(container, data) {
         const W = Math.max(360, Math.min(560, container.clientWidth || 520));
         const H = Math.round(W * 0.96);
-        const m = { top: 18, right: 86, bottom: 40, left: 46 };
+        const m = { top: 16, right: 140, bottom: 38, left: 44 }; // wide right margin holds barbs + readout box
         const w = W - m.left - m.right, h = H - m.top - m.bottom;
 
         const y = d3.scaleLog().domain([SKEWT_PBOT, SKEWT_PTOP]).range([h, 0]); // 1050 bottom → 500 top
@@ -1412,7 +1412,7 @@
         g.append('text').attr('class', 'sktx-label').attr('x', w / 2).attr('y', h + 34).attr('text-anchor', 'middle').text('Temperature (°C)');
 
         // Wind barbs on the right margin
-        const bx = w + 40;
+        const bx = w + 22;
         g.append('text').attr('class', 'sktx-label').attr('x', bx).attr('y', -4).attr('text-anchor', 'middle').text('kt');
         data.forEach(d => {
             if (d.wdir == null) return;
@@ -1425,7 +1425,7 @@
         const mT = focus.append('circle').attr('class', 'sktx-marker-temp').attr('r', 4);
         const mD = focus.append('circle').attr('class', 'sktx-marker-dwpt').attr('r', 4);
         const tipG = focus.append('g');
-        const tipBox = tipG.append('rect').attr('class', 'sktx-tip-box').attr('rx', 4).attr('width', 158).attr('height', 56);
+        const tipBox = tipG.append('rect').attr('class', 'sktx-tip-box').attr('rx', 4).attr('width', 82).attr('height', 76);
         const tipText = tipG.append('text').attr('class', 'sktx-tip');
 
         const P0 = data[0].press; // surface (highest-pressure level)
@@ -1448,17 +1448,19 @@
                 mD.attr('cx', sx(d.dwpt, d.press)).attr('cy', yy);
 
                 const rows = [
-                    `${Math.round(d.press)} hPa · ${Math.round(d.hght)} m`,
-                    `T ${d.temp.toFixed(1)}°C   Td ${d.dwpt.toFixed(1)}°C`,
-                    `Wind ${Math.round(d.wspd * 1.94384)} kt @ ${Math.round(d.wdir)}°`
+                    `${Math.round(d.press)} hPa`,
+                    `${Math.round(d.hght)} m`,
+                    `T ${d.temp.toFixed(1)}°`,
+                    `Td ${d.dwpt.toFixed(1)}°`,
+                    `${Math.round(d.wspd * 1.94384)}kt ${Math.round(d.wdir)}°`
                 ];
                 tipText.selectAll('tspan').remove();
-                rows.forEach((r, i) => tipText.append('tspan').attr('x', 8).attr('y', 16 + i * 16).text(r));
+                rows.forEach((r, i) => tipText.append('tspan').attr('x', 6).attr('y', 13 + i * 14).text(r));
 
-                // Readout box pinned to the right edge, tracking the level vertically,
-                // clamped inside the plot so it stays visible (incl. mobile).
-                const boxW = 158, boxH = 56;
-                const tx = Math.max(2, w - boxW - 4);
+                // Readout box sits entirely to the right of the plot (in the margin),
+                // just tracking the cursor height; clamped so it stays visible on mobile.
+                const boxH = 76;
+                const tx = w + 50;
                 const ty = Math.max(2, Math.min(yy - boxH / 2, h - boxH - 2));
                 tipG.attr('transform', `translate(${tx},${ty})`);
 
