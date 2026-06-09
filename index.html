@@ -281,8 +281,8 @@
 
     <div class="loading">
         <div class="spinner"></div>
-        <div>Fetching AROME / ECMWF / ICON + GFS wind data…</div>
-        <div style="font-size:0.9rem;margin-top:10px;opacity:0.8;">All three models are fetched so you can switch instantly</div>
+        <div>Fetching global + high-res regional models + GFS wind data…</div>
+        <div style="font-size:0.9rem;margin-top:10px;opacity:0.8;">Several models per location — this can take a little longer</div>
     </div>
     <div class="error"><div id="error-message"></div></div>
 
@@ -359,7 +359,7 @@
             <div class="chart-wrapper"><div id="boundaryLayerChart"></div></div>
         </div>
         <div class="chart-container">
-            <div class="chart-title">🔬 Model Comparison — AROME vs ECMWF vs ICON (48 h)</div>
+            <div class="chart-title">🔬 Model Comparison — global + high-res regional models, 48 h<br><span style="font-size:0.8rem;font-weight:400;color:#7f8c8d;">AROME · ECMWF · ICON · DMI Harmonie · ItaliaMeteo · ARPEGE — each shown where it has coverage</span></div>
             <div class="chart-controls" id="model-compare-controls" style="display:none;">
                 <div class="chart-control-group">
                     <label for="model-compare-location">📍 Location:</label>
@@ -446,9 +446,29 @@
             tableCols: [10, 80, 180],
             upperHeight: 120,
             soundingLevels: [1000, 975, 950, 925, 900, 850, 800, 700, 600, 500]
+        },
+        // ── Comparison-only high-res / regional models (not in the surface toggle) ──
+        DMI: {
+            key: 'DMI', label: 'DMI Harmonie', color: '#00838f',
+            endpoint: 'https://api.open-meteo.com/v1/forecast',
+            modelParam: 'dmi_harmonie_arome_europe',
+            heights: [10, 100]   // 2 km, NW/N Europe; has 10 m + 100 m
+        },
+        ITALIA: {
+            key: 'ITALIA', label: 'ItaliaMeteo', color: '#ef6c00',
+            endpoint: 'https://api.open-meteo.com/v1/forecast',
+            modelParam: 'italia_meteo_arpae_icon_2i',
+            heights: [10]        // 2 km, Italy + W Med; 10 m only
+        },
+        ARPEGE: {
+            key: 'ARPEGE', label: 'ARPEGE', color: '#5d4037',
+            endpoint: 'https://api.open-meteo.com/v1/meteofrance',
+            modelParam: 'meteofrance_arpege_europe',
+            heights: [10]        // ~11 km, all-Europe reference (incl. Spain)
         }
     };
-    const MODEL_ORDER = ['AROME', 'ECMWF', 'ICON'];
+    const MODEL_ORDER = ['AROME', 'ECMWF', 'ICON'];          // surface toggle (tables, charts, profile)
+    const COMPARE_ORDER = ['AROME', 'ECMWF', 'ICON', 'DMI', 'ITALIA', 'ARPEGE']; // model-comparison + fetch
 
     // ── SOUNDING SOURCES (Skew-T) ───────────────────────────────────────────────
     // GFS exposes the densest pressure levels on Open-Meteo (25 hPa), ICON 10, ECMWF 6.
@@ -680,17 +700,17 @@
                 console.log(`📍 Fetching Location ${locationNum}: ${coords.lat.toFixed(4)}, ${coords.lon.toFixed(4)}`);
 
                 const surfaceByModel = {};
-                for (const modelKey of MODEL_ORDER) {
+                for (const modelKey of COMPARE_ORDER) {
                     surfaceByModel[modelKey] =
                         await fetchSurfaceModel(modelKey, coords.lat, coords.lon, timezone, locationNum);
-                    await new Promise(r => setTimeout(r, 350)); // be gentle on rate limits
+                    await new Promise(r => setTimeout(r, 300)); // be gentle on rate limits
                 }
 
                 const gfs = await fetchGFSPressureLevelData(coords.lat, coords.lon, timezone, locationNum);
 
                 // elevation: first model that returned data, else GFS
                 let elevation = 0;
-                for (const k of MODEL_ORDER) {
+                for (const k of COMPARE_ORDER) {
                     if (surfaceByModel[k] && surfaceByModel[k].elevation != null) {
                         elevation = surfaceByModel[k].elevation; break;
                     }
@@ -699,7 +719,7 @@
 
                 windData[locationNum] = { coords, locationNum, surfaceByModel, gfs, elevation };
 
-                const got = MODEL_ORDER.filter(k => surfaceByModel[k]).join(', ') || 'none';
+                const got = COMPARE_ORDER.filter(k => surfaceByModel[k]).join(', ') || 'none';
                 console.log(`✅ Location ${locationNum} – models with data: ${got}`);
 
                 if (Object.keys(selectedLocations).length > 1)
@@ -1195,7 +1215,7 @@
                 return;
             }
             const traces = [];
-            MODEL_ORDER.forEach(key => {
+            COMPARE_ORDER.forEach(key => {
                 const surf = data.surfaceByModel[key];
                 if (!surf || !surf.hourly) return;
                 const y = cfg.series(surf.hourly, key);
