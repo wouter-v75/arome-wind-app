@@ -1463,8 +1463,8 @@
                 mT.attr('cx', sx(d.temp, d.press)).attr('cy', yy);
                 mD.attr('cx', sx(d.dwpt, d.press)).attr('cy', yy);
 
-                // Black moist-adiabat from the cursor's temperature (red line) down to the surface
-                const dewPts = dewDescent(d.temp, d.press, P0);
+                // Black dry adiabat from the cursor's temperature (red line) down to the surface
+                const dewPts = surfaceDryDescent(d.temp, d.press, P0);
                 dewLine.attr('d', parcelLine(dewPts));
                 const sfcVal = dewPts.length ? dewPts[dewPts.length - 1].temp : d.temp;
 
@@ -1525,17 +1525,14 @@
         return pts;
     }
 
-    // Moist adiabat through a dew point, descending to the surface.
-    // The surface-end temperature is the "surface dew temperature" (Windy-style).
-    function dewDescent(TdC, Plevel, P0) {
-        const pts = [{ press: Plevel, temp: TdC }];
-        let Tk = TdC + 273.15, p = Plevel;
-        while (p < P0) {
-            const dp = Math.min(5, P0 - p);
-            Tk = Tk + moistLapseDtDp(Tk, p) * dp;   // p increases going down → warming
-            p += dp;
-            pts.push({ press: p, temp: Tk - 273.15 });
-        }
+    // Dry adiabat (constant potential temperature) from a point down to the surface.
+    // An unsaturated parcel brought down to the surface warms along this curve; its
+    // surface-end temperature is the parcel's surface temperature.
+    function surfaceDryDescent(Tc, Plevel, P0) {
+        const thetaK = (Tc + 273.15) * Math.pow(1000 / Plevel, 0.2854);
+        const pts = [];
+        for (let p = Plevel; p < P0; p += 5) pts.push({ press: p, temp: thetaK * Math.pow(p / 1000, 0.2854) - 273.15 });
+        pts.push({ press: P0, temp: thetaK * Math.pow(P0 / 1000, 0.2854) - 273.15 });
         return pts;
     }
 
