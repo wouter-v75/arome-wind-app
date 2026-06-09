@@ -337,6 +337,18 @@
             <div class="chart-title">🌫️ Planetary Boundary Layer Height Analysis (GFS Model)</div>
             <div class="chart-wrapper"><div id="boundaryLayerChart"></div></div>
         </div>
+        <div class="chart-container">
+            <div class="chart-title">🔬 Model Comparison — AROME vs ECMWF vs ICON (48 h)</div>
+            <div class="chart-controls" id="model-compare-controls" style="display:none;">
+                <div class="chart-control-group">
+                    <label for="model-compare-location">📍 Location:</label>
+                    <select id="model-compare-location" class="time-selector" onchange="createModelComparisonChart()"></select>
+                </div>
+            </div>
+            <div id="modelCompare10m" style="height:360px;"></div>
+            <div id="modelCompare100m" style="height:360px;margin-top:24px;"></div>
+            <div id="modelCompareDir10m" style="height:360px;margin-top:24px;"></div>
+        </div>
     </div>
 
 </div><!-- /container -->
@@ -807,7 +819,9 @@
         createLocationSummaries();
         createWindComparisonChart();
         createWindProfileChart();
-        createBoundaryLayerChart(); // GFS-only, rendered once (not model-dependent)
+        createBoundaryLayerChart();      // GFS-only, rendered once (not model-dependent)
+        populateModelCompareLocations(); // model-comparison pane (compares all models)
+        createModelComparisonChart();
     }
 
     function createLocationSummaries() {
@@ -1052,6 +1066,99 @@
             hovermode: 'x unified', legend: { orientation: 'h', y: -0.15 },
             margin: { t:60, b:100 }, plot_bgcolor: 'rgba(248,249,250,0.8)'
         }, { responsive: true });
+    }
+
+    // ── MODEL COMPARISON PANE ────────────────────────────────────────────────────
+    // Compares all three surface models for ONE location across the 48 h forecast.
+    // Independent of the model toggle. ICON 100 m is linearly interpolated between
+    // its 80 m and 120 m levels (= their average).
+
+    function populateModelCompareLocations() {
+        const sel  = document.getElementById('model-compare-location');
+        const ctrl = document.getElementById('model-compare-controls');
+        const names = { 1:'🔴 Location 1', 2:'🟢 Location 2', 3:'🟠 Location 3' };
+        const keys = Object.keys(windData);
+        sel.innerHTML = '';
+        keys.forEach(k => {
+            const o = document.createElement('option');
+            o.value = k; o.textContent = names[k] || `Location ${k}`;
+            sel.appendChild(o);
+        });
+        ctrl.style.display = keys.length > 1 ? 'flex' : 'none';
+    }
+
+    // Returns a 100 m wind-speed series (knots) for a model, interpolating for ICON.
+    function speed100mSeries(hourly, modelKey) {
+        if (modelKey === 'ICON') {
+            const a = hourly.wind_speed_80m, b = hourly.wind_speed_120m;
+            if (!a || !b) return null;
+            return a.map((v, i) => (v != null && b[i] != null) ? kmhToKnots((v + b[i]) / 2) : null);
+        }
+        return hourly.wind_speed_100m
+            ? hourly.wind_speed_100m.map(v => v != null ? kmhToKnots(v) : null)
+            : null;
+    }
+
+    function createModelComparisonChart() {
+        const sel    = document.getElementById('model-compare-location');
+        const locNum = sel.value || Object.keys(windData)[0];
+        const data   = windData[locNum];
+
+        const charts = [
+            { div: 'modelCompare10m',  title: '10 m Wind Speed',
+              yTitle: 'Wind Speed (knots)', isDir: false,
+              series: h => h.wind_speed_10m ? h.wind_speed_10m.map(v => v != null ? kmhToKnots(v) : null) : null },
+            { div: 'modelCompare100m', title: '100 m Wind Speed (ICON interpolated 80–120 m)',
+              yTitle: 'Wind Speed (knots)', isDir: false,
+              series: (h, key) => speed100mSeries(h, key) },
+            { div: 'modelCompareDir10m', title: '10 m Wind Direction',
+              yTitle: 'Wind Direction (°)', isDir: true,
+              series: h => h.wind_direction_10m || null }
+        ];
+
+        charts.forEach(cfg => {
+            const el = document.getElementById(cfg.div);
+            if (!data) {
+                el.innerHTML = `<div class="placeholder-content"><div class="placeholder-icon">📊</div><div class="placeholder-text">No Data</div></div>`;
+                return;
+            }
+            const traces = [];
+            MODEL_ORDER.forEach(key => {
+                const surf = data.surfaceByModel[key];
+                if (!surf || !surf.hourly) return;
+                const y = cfg.series(surf.hourly, key);
+                if (!y) return;
+                traces.push({
+                    x: surf.hourly.time.map(t => new Date(t)),
+                    y,
+                    type: 'scatter',
+                    mode: cfg.isDir ? 'markers' : 'lines+markers',
+                    name: MODELS[key].label,
+                    line:   { color: MODELS[key].color, width: 2 },
+                    marker: { color: MODELS[key].color, size: cfg.isDir ? 5 : 4 },
+                    connectgaps: true,
+                    hovertemplate: `<b>${MODELS[key].label}</b><br>%{x|%a %d %H:%M}<br>` +
+                                   (cfg.isDir ? '%{y:.0f}°' : '%{y:.1f} kt') + '<extra></extra>'
+                });
+            });
+
+            if (!traces.length) {
+                el.innerHTML = `<div class="placeholder-content"><div class="placeholder-icon">❌</div><div class="placeholder-text">No data for ${cfg.title}</div></div>`;
+                return;
+            }
+
+            const layout = {
+                title: cfg.title,
+                xaxis: { title: 'Time', type: 'date', gridcolor: 'rgba(200,200,200,0.3)' },
+                yaxis: { title: cfg.yTitle, gridcolor: 'rgba(200,200,200,0.3)',
+                         rangemode: cfg.isDir ? 'normal' : 'tozero' },
+                hovermode: 'x unified', legend: { orientation: 'h', y: -0.25 },
+                margin: { t: 40, b: 70 }, plot_bgcolor: 'rgba(248,249,250,0.8)'
+            };
+            if (cfg.isDir) { layout.yaxis.range = [0, 360]; layout.yaxis.dtick = 45; }
+
+            Plotly.newPlot(cfg.div, traces, layout, { responsive: true });
+        });
     }
 
     // ── INIT ─────────────────────────────────────────────────────────────────────
