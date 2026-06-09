@@ -18,6 +18,7 @@
         .sktx-temp { fill: none; stroke: #e74c3c; stroke-width: 2.5px; }
         .sktx-dwpt { fill: none; stroke: #2980b9; stroke-width: 2.5px; }
         .sktx-parcel { fill: none; stroke: #27ae60; stroke-width: 1.8px; stroke-dasharray: 6 4; }
+        .sktx-dewline { fill: none; stroke: #111; stroke-width: 1.2px; }
         .sktx-axis text { font-size: 11px; fill: #2c3e50; }
         .sktx-axis path, .sktx-axis line { stroke: #95a5a6; }
         .sktx-barb { stroke: #2c3e50; stroke-width: 1px; fill: #2c3e50; }
@@ -1418,6 +1419,8 @@
 
         // Dynamic lifted parcel — drawn on hover, anchored at the cursor point
         const parcelPath = plot.append('path').attr('class', 'sktx-parcel').style('display', 'none');
+        // Black line: moist adiabat through the level's dew point, down to the surface
+        const dewLine = plot.append('path').attr('class', 'sktx-dewline').style('display', 'none');
 
         // Temperature axis (bottom)
         g.append('g').attr('class', 'sktx-axis').attr('transform', `translate(0,${h})`)
@@ -1438,7 +1441,7 @@
         const mT = focus.append('circle').attr('class', 'sktx-marker-temp').attr('r', 4);
         const mD = focus.append('circle').attr('class', 'sktx-marker-dwpt').attr('r', 4);
         const tipG = focus.append('g');
-        const tipBox = tipG.append('rect').attr('class', 'sktx-tip-box').attr('rx', 4).attr('width', 82).attr('height', 76);
+        const tipBox = tipG.append('rect').attr('class', 'sktx-tip-box').attr('rx', 4).attr('width', 84).attr('height', 90);
         const tipText = tipG.append('text').attr('class', 'sktx-tip');
 
         const P0 = data[0].press; // surface (highest-pressure level)
@@ -1446,8 +1449,8 @@
 
         g.append('rect').attr('width', w).attr('height', h)
             .style('fill', 'none').style('pointer-events', 'all')
-            .on('mouseover', () => { focus.style('display', null); parcelPath.style('display', null); })
-            .on('mouseout', () => { focus.style('display', 'none'); parcelPath.style('display', 'none'); })
+            .on('mouseover', () => { focus.style('display', null); parcelPath.style('display', null); dewLine.style('display', null); })
+            .on('mouseout', () => { focus.style('display', 'none'); parcelPath.style('display', 'none'); dewLine.style('display', 'none'); })
             .on('mousemove', function (ev) {
                 const [mx, my] = d3.pointer(ev, this);
 
@@ -1460,19 +1463,25 @@
                 mT.attr('cx', sx(d.temp, d.press)).attr('cy', yy);
                 mD.attr('cx', sx(d.dwpt, d.press)).attr('cy', yy);
 
+                // Black moist-adiabat from the dew point down to the surface
+                const dewPts = dewDescent(d.dwpt, d.press, P0);
+                dewLine.attr('d', parcelLine(dewPts));
+                const sfcTd = dewPts.length ? dewPts[dewPts.length - 1].temp : d.dwpt;
+
                 const rows = [
                     `${Math.round(d.press)} hPa`,
                     `${Math.round(d.hght)} m`,
                     `T ${d.temp.toFixed(1)}°`,
                     `Td ${d.dwpt.toFixed(1)}°`,
-                    `${Math.round(d.wspd * 1.94384)}kt ${Math.round(d.wdir)}°`
+                    `${Math.round(d.wspd * 1.94384)}kt ${Math.round(d.wdir)}°`,
+                    `sfc Td ${Math.round(sfcTd)}°`
                 ];
                 tipText.selectAll('tspan').remove();
                 rows.forEach((r, i) => tipText.append('tspan').attr('x', 6).attr('y', 13 + i * 14).text(r));
 
                 // Readout box sits entirely to the right of the plot (in the margin),
                 // just tracking the cursor height; clamped so it stays visible on mobile.
-                const boxH = 76;
+                const boxH = 90;
                 const tx = w + 50;
                 const ty = Math.max(2, Math.min(yy - boxH / 2, h - boxH - 2));
                 tipG.attr('transform', `translate(${tx},${ty})`);
@@ -1511,6 +1520,20 @@
             const dp = Math.min(5, p - SKEWT_PTOP);
             Tk = Tk - moistLapseDtDp(Tk, p) * dp;   // p decreases by dp going up
             p -= dp;
+            pts.push({ press: p, temp: Tk - 273.15 });
+        }
+        return pts;
+    }
+
+    // Moist adiabat through a dew point, descending to the surface.
+    // The surface-end temperature is the "surface dew temperature" (Windy-style).
+    function dewDescent(TdC, Plevel, P0) {
+        const pts = [{ press: Plevel, temp: TdC }];
+        let Tk = TdC + 273.15, p = Plevel;
+        while (p < P0) {
+            const dp = Math.min(5, P0 - p);
+            Tk = Tk + moistLapseDtDp(Tk, p) * dp;   // p increases going down → warming
+            p += dp;
             pts.push({ press: p, temp: Tk - 273.15 });
         }
         return pts;
