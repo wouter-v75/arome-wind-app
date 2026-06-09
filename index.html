@@ -1371,7 +1371,7 @@
         const w = W - m.left - m.right, h = H - m.top - m.bottom;
 
         const y = d3.scaleLog().domain([SKEWT_PBOT, SKEWT_PTOP]).range([h, 0]); // 1050 bottom → 500 top
-        const x = d3.scaleLinear().domain([-30, 40]).range([0, w]);            // temperature at the base (zoomed)
+        const x = d3.scaleLinear().domain([-10, 35]).range([0, w]);            // temperature at the base (zoomed)
         // Width-relative skew: a level shifts right by up to ~0.55·width at the top,
         // independent of chart height, so typical (even warm) soundings stay on-screen.
         const SK = (0.55 * w) / h;
@@ -1424,7 +1424,7 @@
 
         // Temperature axis (bottom)
         g.append('g').attr('class', 'sktx-axis').attr('transform', `translate(0,${h})`)
-            .call(d3.axisBottom(x).tickValues(d3.range(-30, 41, 10)).tickFormat(d => d + '°'));
+            .call(d3.axisBottom(x).tickValues(d3.range(-10, 36, 5)).tickFormat(d => d + '°'));
         g.append('text').attr('class', 'sktx-label').attr('x', w / 2).attr('y', h + 34).attr('text-anchor', 'middle').text('Temperature (°C)');
 
         // Wind barbs on the right margin
