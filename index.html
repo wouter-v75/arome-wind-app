@@ -14,7 +14,7 @@
         .sktx-isobar { stroke: #dfe3e6; stroke-width: 0.75px; }
         .sktx-isotherm { stroke: #ececec; stroke-width: 0.75px; }
         .sktx-isotherm-zero { stroke: #bbb; stroke-width: 1.1px; }
-        .sktx-dryadiabat { stroke: #f0c9a0; stroke-width: 0.6px; stroke-dasharray: 3 3; opacity: 0.65; }
+        .sktx-dryadiabat { fill: none; stroke: #f0c9a0; stroke-width: 0.6px; stroke-dasharray: 3 3; opacity: 0.65; }
         .sktx-temp { fill: none; stroke: #e74c3c; stroke-width: 2.5px; }
         .sktx-dwpt { fill: none; stroke: #27ae60; stroke-width: 2.5px; stroke-dasharray: 6 4; }
         .sktx-axis text { font-size: 11px; fill: #2c3e50; }
@@ -1355,8 +1355,10 @@
         const w = W - m.left - m.right, h = H - m.top - m.bottom;
 
         const y = d3.scaleLog().domain([SKEWT_PBOT, SKEWT_PTOP]).range([h, 0]); // 1050 bottom → 500 top
-        const x = d3.scaleLinear().domain([-40, 40]).range([0, w]);            // temperature at the base
-        const SK = 0.85;
+        const x = d3.scaleLinear().domain([-45, 45]).range([0, w]);            // temperature at the base
+        // Width-relative skew: a level shifts right by up to ~0.55·width at the top,
+        // independent of chart height, so typical (even warm) soundings stay on-screen.
+        const SK = (0.55 * w) / h;
         const sx = (t, p) => x(t) + (h - y(p)) * SK;                            // skewed x position
 
         const svg = d3.select(container).append('svg')
@@ -1375,7 +1377,7 @@
         });
 
         // Skewed isotherms (every 10 °C)
-        d3.range(-80, 51, 10).forEach(T => {
+        d3.range(-120, 61, 10).forEach(T => {
             plot.append('line')
                 .attr('class', T === 0 ? 'sktx-isotherm-zero' : 'sktx-isotherm')
                 .attr('x1', sx(T, SKEWT_PBOT)).attr('y1', h)
