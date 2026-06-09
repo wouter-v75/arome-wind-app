@@ -16,14 +16,15 @@
         .sktx-isotherm-zero { stroke: #bbb; stroke-width: 1.1px; }
         .sktx-dryadiabat { fill: none; stroke: #f0c9a0; stroke-width: 0.6px; stroke-dasharray: 3 3; opacity: 0.65; }
         .sktx-temp { fill: none; stroke: #e74c3c; stroke-width: 2.5px; }
-        .sktx-dwpt { fill: none; stroke: #27ae60; stroke-width: 2.5px; stroke-dasharray: 6 4; }
+        .sktx-dwpt { fill: none; stroke: #2980b9; stroke-width: 2.5px; }
+        .sktx-parcel { fill: none; stroke: #27ae60; stroke-width: 1.8px; stroke-dasharray: 6 4; }
         .sktx-axis text { font-size: 11px; fill: #2c3e50; }
         .sktx-axis path, .sktx-axis line { stroke: #95a5a6; }
         .sktx-barb { stroke: #2c3e50; stroke-width: 1px; fill: #2c3e50; }
         .sktx-label { font-size: 10px; fill: #7f8c8d; }
         .sktx-cursorline { stroke: #27ae60; stroke-width: 1.2px; stroke-dasharray: 2 3; }
         .sktx-marker-temp { fill: #e74c3c; }
-        .sktx-marker-dwpt { fill: #27ae60; }
+        .sktx-marker-dwpt { fill: #2980b9; }
         .sktx-tip { font-size: 11px; fill: #2c3e50; }
         .sktx-tip-box { fill: rgba(255,255,255,0.95); stroke: #ccc; }
 
@@ -385,8 +386,9 @@
                 </div>
             </div>
             <div style="text-align:center;font-size:0.85rem;color:#7f8c8d;margin-bottom:10px;">
-                Red = temperature, green = dew point. Wind barbs (knots) on the right. Hover for values.
-                Upper-air follows the selected model, falling back to ECMWF.
+                Red = temperature, blue = dew point, green dashed = lifted surface parcel
+                (dry adiabat → LCL → moist adiabat). Wind barbs (kt) on the right; hover for values.
+                Upper-air follows the model toggle, falling back to ECMWF.
             </div>
             <div id="skewtChart" style="max-width:560px;margin:0 auto;"></div>
         </div>
@@ -1401,6 +1403,13 @@
         plot.append('path').datum(data).attr('class', 'sktx-dwpt')
             .attr('d', d3.line().x(d => sx(d.dwpt, d.press)).y(d => y(d.press)));
 
+        // Lifted surface parcel: dry adiabat to the LCL, then moist adiabat above
+        const parcel = computeParcel(data);
+        if (parcel && parcel.length > 1) {
+            plot.append('path').datum(parcel).attr('class', 'sktx-parcel')
+                .attr('d', d3.line().x(d => sx(d.temp, d.press)).y(d => y(d.press)));
+        }
+
         // Temperature axis (bottom)
         g.append('g').attr('class', 'sktx-axis').attr('transform', `translate(0,${h})`)
             .call(d3.axisBottom(x).tickValues(d3.range(-40, 41, 10)).tickFormat(d => d + '°'));
@@ -1452,6 +1461,52 @@
                 if (ty < 0) ty = yy + 10;
                 tipG.attr('transform', `translate(${tx},${ty})`);
             });
+    }
+
+    // Pseudo-adiabatic lapse rate dT/dP (K per hPa) for a saturated parcel.
+    function moistLapseDtDp(Tk, pHpa) {
+        const eps = 0.622, Lv = 2.501e6, Rd = 287.05, cpd = 1005.7;
+        const Tc = Tk - 273.15;
+        const es = 6.112 * Math.exp(17.67 * Tc / (Tc + 243.5));   // hPa
+        const rs = eps * es / Math.max(pHpa - es, 1e-6);          // kg/kg
+        const num = Rd * Tk + Lv * rs;
+        const den = cpd + (Lv * Lv * rs * eps) / (Rd * Tk * Tk);
+        return (num / den) / pHpa;                                // K/hPa
+    }
+
+    // Lifted parcel from the surface (lowest level): dry adiabat → LCL → moist adiabat.
+    function computeParcel(data) {
+        const sfc = data[0];
+        if (!sfc) return null;
+        const P0 = sfc.press;
+        const T0K = sfc.temp + 273.15;
+        const Td0K = Math.min(sfc.dwpt, sfc.temp) + 273.15;
+        if (!isFinite(T0K) || !isFinite(Td0K)) return null;
+
+        // Bolton (1980) LCL temperature, then Poisson for LCL pressure (dry-adiabatic)
+        const Tlcl = 1 / (1 / (Td0K - 56) + Math.log(T0K / Td0K) / 800) + 56;
+        const Plcl = P0 * Math.pow(Tlcl / T0K, 3.504);
+        if (!isFinite(Tlcl) || !isFinite(Plcl) || Plcl <= SKEWT_PTOP) {
+            // Saturated/over the top — fall back to a pure dry adiabat to the top
+            const pts = [];
+            for (let p = P0; p >= SKEWT_PTOP; p -= 5) pts.push({ press: p, temp: T0K * Math.pow(p / P0, 0.2854) - 273.15 });
+            return pts;
+        }
+
+        const pts = [];
+        // Dry adiabat from surface up to the LCL
+        for (let p = P0; p > Plcl; p -= 5) pts.push({ press: p, temp: T0K * Math.pow(p / P0, 0.2854) - 273.15 });
+        pts.push({ press: Plcl, temp: Tlcl - 273.15 });
+
+        // Moist (pseudo) adiabat from the LCL to the top, stepwise integration
+        let Tk = Tlcl, p = Plcl;
+        while (p > SKEWT_PTOP) {
+            const dp = Math.min(5, p - SKEWT_PTOP);
+            Tk = Tk - moistLapseDtDp(Tk, p) * dp;   // p decreases by dp going up
+            p -= dp;
+            pts.push({ press: p, temp: Tk - 273.15 });
+        }
+        return pts;
     }
 
     // Standard meteorological wind barb (speed in knots). Staff points toward wind source.
