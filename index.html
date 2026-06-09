@@ -250,16 +250,11 @@
     <!-- CONTROLS -->
     <div class="control-section">
         <div style="background:#2ecc71;color:white;padding:15px;border-radius:8px;margin-bottom:20px;">
-            <strong>🌐 MULTI-MODEL WIND ANALYSIS:</strong> AROME, ECMWF and ICON are all fetched for every location, then compared side by side via the model toggle.
-            <br><br>
-            <strong>Data Sources:</strong>
-            <ul style="margin:10px 0 0 20px;">
-                <li><strong>AROME (Météo-France):</strong> 10 / 20 / 50 / 100 / 150 / 200 m wind at 1.5 km resolution</li>
-                <li><strong>ECMWF IFS:</strong> 10 / 100 / 200 m wind at 9 km resolution</li>
-                <li><strong>ICON (DWD seamless):</strong> 10 / 80 / 120 / 180 m wind (auto-blends ICON-D2 / EU / Global)</li>
-                <li><strong>GFS (NOAA):</strong> Pressure level wind (975–750 hPa) + boundary layer height — always shown</li>
-                <li><strong>Theoretical Profile:</strong> Logarithmic wind profile for sea conditions (z₀ = 0.2 mm)</li>
-            </ul>
+            <strong>🌐 MULTI-MODEL WIND ANALYSIS:</strong> Tick the models to include in the analysis. Only ticked models are fetched and compared. After an analysis, models with no data at your points are greyed out.
+            <div id="model-checkboxes" style="display:flex;flex-wrap:wrap;gap:8px 16px;margin:14px 0 6px;"></div>
+            <div style="font-size:0.85rem;opacity:0.92;">
+                Always on: <strong>GFS</strong> (pressure-level winds 975–750 hPa, PBL height, Skew-T source) and the theoretical log wind profile (z₀ = 0.2 mm).
+            </div>
         </div>
         <div class="control-grid">
             <div class="input-group"><label for="date">Start Date</label><input type="date" id="date"></div>
@@ -412,6 +407,9 @@
     let activeModel = 'AROME';
     let skewtTimeIndex = 0;
     let skewtSource = 'GFS';
+    // Which models the user has ticked (all on by default) + last-analysis availability (for greying)
+    const modelEnabled = { AROME: true, ECMWF: true, ICON: true, DMI: true, ITALIA: true, ARPEGE: true };
+    const modelAvailable = {};
 
     // ── MODEL DEFINITIONS ────────────────────────────────────────────────────────
     // heights      = all wind heights requested / shown in the vertical profile
@@ -626,6 +624,29 @@
 
     // ── MODEL SELECTOR ───────────────────────────────────────────────────────────
 
+    // Checkboxes in the green box — pick which models to include; grey out unavailable ones
+    function renderModelCheckboxes() {
+        const cont = document.getElementById('model-checkboxes');
+        if (!cont) return;
+        cont.innerHTML = '';
+        COMPARE_ORDER.forEach(key => {
+            const m = MODELS[key];
+            const noData = modelAvailable[key] === false;
+            const label = document.createElement('label');
+            label.style.cssText = 'display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:0.92rem;white-space:nowrap;' + (noData ? 'opacity:0.45;' : '');
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.checked = modelEnabled[key];
+            cb.onchange = () => { modelEnabled[key] = cb.checked; };
+            const sw = document.createElement('span');
+            sw.style.cssText = `display:inline-block;width:11px;height:11px;border-radius:2px;background:${m.color};`;
+            const txt = document.createElement('span');
+            txt.textContent = m.label + (noData ? ' — no data' : '');
+            label.appendChild(cb); label.appendChild(sw); label.appendChild(txt);
+            cont.appendChild(label);
+        });
+    }
+
     function renderModelButtons() {
         const group = document.getElementById('model-btn-group');
         group.innerHTML = '';
@@ -701,6 +722,7 @@
 
                 const surfaceByModel = {};
                 for (const modelKey of COMPARE_ORDER) {
+                    if (!modelEnabled[modelKey]) { surfaceByModel[modelKey] = null; continue; } // unticked → skip
                     surfaceByModel[modelKey] =
                         await fetchSurfaceModel(modelKey, coords.lat, coords.lon, timezone, locationNum);
                     await new Promise(r => setTimeout(r, 300)); // be gentle on rate limits
@@ -725,6 +747,14 @@
                 if (Object.keys(selectedLocations).length > 1)
                     await new Promise(r => setTimeout(r, 400));
             }
+
+            // Update availability (for checkbox greying): ticked models that returned no data
+            COMPARE_ORDER.forEach(k => {
+                modelAvailable[k] = modelEnabled[k]
+                    ? Object.values(windData).some(d => d.surfaceByModel[k] && hasValidSpeed(d.surfaceByModel[k].hourly))
+                    : undefined;
+            });
+            renderModelCheckboxes();
 
             // Pick the default active model: first (AROME→ECMWF→ICON) that has any data
             activeModel = MODEL_ORDER.find(k => modelHasAnyData(k)) || 'AROME';
@@ -1641,6 +1671,7 @@
         document.getElementById('date').valueAsDate = new Date();
         initMap();
         updateTableVisibility();
+        renderModelCheckboxes();
     };
 </script>
 </body>
