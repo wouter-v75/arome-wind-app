@@ -7,31 +7,25 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.24.1/plotly.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- Skew-T Log-P diagram library (self-contained D3 build) -->
-    <script src="https://unpkg.com/skewt@2.0.0/dist/index.iife.js"></script>
+    <!-- D3 v7 — powers the custom Skew-T sounding -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
     <style>
-        /* ── skewt library styles (inlined so rendering never depends on a CDN CSS fetch) ── */
-        .skewt-container {
-            --skewt-temp-color: #e74c3c; --skewt-dwpt-color: #27ae60;
-            --skewt-grid-color: #dfdfdf; --skewt-zero-color: #aaa;
-            --skewt-axis-color: #2c3e50; --skewt-barb-color: #2c3e50;
-            --skewt-font-size: 12px; --skewt-tooltip-font-size: 11px;
-        }
-        .skewt-axis path, .skewt-axis line { fill: none; stroke: var(--skewt-axis-color); stroke-width: 1px; shape-rendering: crispEdges; }
-        .skewt-axis { fill: var(--skewt-axis-color); font-size: var(--skewt-font-size); }
-        .skewt-axis.skewt-ticks text { display: none; }
-        .skewt-gridline, .skewt-tempzero { stroke: var(--skewt-grid-color); stroke-width: 0.75px; fill: none; }
-        .skewt-tempzero { stroke: var(--skewt-zero-color); stroke-width: 1.25px; }
-        .skewt-temp { fill: none; stroke: var(--skewt-temp-color); stroke-width: 3px; }
-        .skewt-dwpt { fill: none; stroke: var(--skewt-dwpt-color); stroke-width: 3px; }
-        .skewt-skline { stroke-width: 1.8px; opacity: 0.8; }
-        .skewt-mean { stroke-width: 2.5px; }
-        .skewt-windbarb { stroke: var(--skewt-barb-color); stroke-width: 0.75px; fill: none; }
-        .skewt-flag { fill: var(--skewt-barb-color); }
-        .skewt-overlay { fill: none; pointer-events: all; }
-        .skewt-focus.skewt-tmpc circle { fill: var(--skewt-temp-color); stroke: none; }
-        .skewt-focus.skewt-dwpc circle { fill: var(--skewt-dwpt-color); stroke: none; }
-        .skewt-focus text { font-size: var(--skewt-tooltip-font-size); }
+        /* ── custom Skew-T sounding styles ── */
+        .sktx-isobar { stroke: #dfe3e6; stroke-width: 0.75px; }
+        .sktx-isotherm { stroke: #ececec; stroke-width: 0.75px; }
+        .sktx-isotherm-zero { stroke: #bbb; stroke-width: 1.1px; }
+        .sktx-dryadiabat { stroke: #f0c9a0; stroke-width: 0.6px; stroke-dasharray: 3 3; opacity: 0.65; }
+        .sktx-temp { fill: none; stroke: #e74c3c; stroke-width: 2.5px; }
+        .sktx-dwpt { fill: none; stroke: #27ae60; stroke-width: 2.5px; stroke-dasharray: 6 4; }
+        .sktx-axis text { font-size: 11px; fill: #2c3e50; }
+        .sktx-axis path, .sktx-axis line { stroke: #95a5a6; }
+        .sktx-barb { stroke: #2c3e50; stroke-width: 1px; fill: #2c3e50; }
+        .sktx-label { font-size: 10px; fill: #7f8c8d; }
+        .sktx-cursorline { stroke: #27ae60; stroke-width: 1.2px; stroke-dasharray: 2 3; }
+        .sktx-marker-temp { fill: #e74c3c; }
+        .sktx-marker-dwpt { fill: #27ae60; }
+        .sktx-tip { font-size: 11px; fill: #2c3e50; }
+        .sktx-tip-box { fill: rgba(255,255,255,0.95); stroke: #ccc; }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -410,7 +404,6 @@
     let selectedTimezone = 'UTC';
     let activeModel = 'AROME';
     let skewtTimeIndex = 0;
-    let skewtInstance = null;
 
     // ── MODEL DEFINITIONS ────────────────────────────────────────────────────────
     // heights      = all wind heights requested / shown in the vertical profile
@@ -434,7 +427,7 @@
             heights: [10, 100, 200],
             tableCols: [10, 100, 200],
             upperHeight: 100,
-            soundingLevels: [1000, 925, 850, 700, 600, 500, 400, 300, 250, 200, 150, 100, 50]
+            soundingLevels: [1000, 925, 850, 700, 600, 500]
         },
         ICON: {
             key: 'ICON', label: 'ICON', subtitle: 'DWD seamless',
@@ -444,7 +437,7 @@
             heights: [10, 80, 120, 180],
             tableCols: [10, 80, 180],
             upperHeight: 120,
-            soundingLevels: [1000, 975, 950, 925, 900, 850, 800, 700, 600, 500, 400, 300, 250, 200, 150, 100, 70, 50, 30]
+            soundingLevels: [1000, 975, 950, 925, 900, 850, 800, 700, 600, 500]
         }
     };
     const MODEL_ORDER = ['AROME', 'ECMWF', 'ICON'];
@@ -1315,16 +1308,17 @@
         renderSkewT();
     }
 
+    const SKEWT_PTOP = 500;   // top of the diagram (hPa)
+    const SKEWT_PBOT = 1050;  // bottom of the diagram (hPa)
+
     function renderSkewT() {
         const container = document.getElementById('skewtChart');
         const labelEl   = document.getElementById('skewt-model-label');
         if (!container) return;
-
-        if (skewtInstance) { skewtInstance.destroy(); skewtInstance = null; }
         container.innerHTML = '';
 
-        if (!window.skewt || !window.skewt.SkewT) {
-            container.innerHTML = `<div class="placeholder-content"><div class="placeholder-icon">⚠️</div><div class="placeholder-text">Skew-T library failed to load</div><div class="placeholder-subtext">Check your internet connection and reload.</div></div>`;
+        if (!window.d3) {
+            container.innerHTML = `<div class="placeholder-content"><div class="placeholder-icon">⚠️</div><div class="placeholder-text">D3 failed to load</div><div class="placeholder-subtext">Check your internet connection and reload.</div></div>`;
             return;
         }
 
@@ -1343,14 +1337,134 @@
         labelEl.textContent = MODELS[modelKey].label;
         labelEl.className = 'model-badge ' + MODELS[modelKey].badgeClass;
 
-        const data = buildSounding(locNum, modelKey);
+        const data = buildSounding(locNum, modelKey)
+            .filter(d => d.press >= SKEWT_PTOP)
+            .sort((a, b) => b.press - a.press); // surface → top
         if (data.length < 3) {
             container.innerHTML = `<div class="placeholder-content"><div class="placeholder-icon">❌</div><div class="placeholder-text">Not enough levels</div></div>`;
             return;
         }
 
-        skewtInstance = new window.skewt.SkewT(container, { unit: 'kt' });
-        skewtInstance.plot(data);
+        drawSkewT(container, data);
+    }
+
+    function drawSkewT(container, data) {
+        const W = Math.max(360, Math.min(560, container.clientWidth || 520));
+        const H = Math.round(W * 0.96);
+        const m = { top: 18, right: 86, bottom: 40, left: 46 };
+        const w = W - m.left - m.right, h = H - m.top - m.bottom;
+
+        const y = d3.scaleLog().domain([SKEWT_PBOT, SKEWT_PTOP]).range([h, 0]); // 1050 bottom → 500 top
+        const x = d3.scaleLinear().domain([-40, 40]).range([0, w]);            // temperature at the base
+        const SK = 0.85;
+        const sx = (t, p) => x(t) + (h - y(p)) * SK;                            // skewed x position
+
+        const svg = d3.select(container).append('svg')
+            .attr('width', W).attr('height', H)
+            .attr('viewBox', `0 0 ${W} ${H}`).style('max-width', '100%').style('height', 'auto');
+        const g = svg.append('g').attr('transform', `translate(${m.left},${m.top})`);
+
+        const clipId = 'sktxclip-' + Math.random().toString(36).slice(2, 8);
+        g.append('clipPath').attr('id', clipId).append('rect').attr('width', w).attr('height', h);
+        const plot = g.append('g').attr('clip-path', `url(#${clipId})`);
+
+        // Isobars + pressure labels
+        [1000, 950, 900, 850, 800, 750, 700, 650, 600, 550, 500].forEach(P => {
+            plot.append('line').attr('class', 'sktx-isobar').attr('x1', 0).attr('x2', w).attr('y1', y(P)).attr('y2', y(P));
+            g.append('text').attr('class', 'sktx-label').attr('x', -6).attr('y', y(P)).attr('text-anchor', 'end').attr('dy', '0.32em').text(P);
+        });
+
+        // Skewed isotherms (every 10 °C)
+        d3.range(-80, 51, 10).forEach(T => {
+            plot.append('line')
+                .attr('class', T === 0 ? 'sktx-isotherm-zero' : 'sktx-isotherm')
+                .attr('x1', sx(T, SKEWT_PBOT)).attr('y1', h)
+                .attr('x2', sx(T, SKEWT_PTOP)).attr('y2', 0);
+        });
+
+        // Light dry adiabats for reference
+        const line = d3.line().x(d => d[0]).y(d => d[1]);
+        const pgrid = d3.range(SKEWT_PBOT, SKEWT_PTOP - 1, -10);
+        d3.range(-20, 160, 20).forEach(theta => {
+            const pts = pgrid.map(p => {
+                const T = (theta + 273.15) * Math.pow(p / 1000, 0.286) - 273.15;
+                return [sx(T, p), y(p)];
+            });
+            plot.append('path').attr('class', 'sktx-dryadiabat').attr('d', line(pts));
+        });
+
+        // Temperature & dew-point profiles
+        plot.append('path').datum(data).attr('class', 'sktx-temp')
+            .attr('d', d3.line().x(d => sx(d.temp, d.press)).y(d => y(d.press)));
+        plot.append('path').datum(data).attr('class', 'sktx-dwpt')
+            .attr('d', d3.line().x(d => sx(d.dwpt, d.press)).y(d => y(d.press)));
+
+        // Temperature axis (bottom)
+        g.append('g').attr('class', 'sktx-axis').attr('transform', `translate(0,${h})`)
+            .call(d3.axisBottom(x).tickValues(d3.range(-40, 41, 10)).tickFormat(d => d + '°'));
+        g.append('text').attr('class', 'sktx-label').attr('x', w / 2).attr('y', h + 34).attr('text-anchor', 'middle').text('Temperature (°C)');
+
+        // Wind barbs on the right margin
+        const bx = w + 40;
+        g.append('text').attr('class', 'sktx-label').attr('x', bx).attr('y', -4).attr('text-anchor', 'middle').text('kt');
+        data.forEach(d => {
+            if (d.wdir == null) return;
+            drawBarb(g, bx, y(d.press), d.wdir, d.wspd * 1.94384);
+        });
+
+        // ── Interactive crosshair (Windy-style) ──
+        const focus = g.append('g').style('display', 'none');
+        const hline = focus.append('line').attr('class', 'sktx-cursorline').attr('x1', 0).attr('x2', w);
+        const mT = focus.append('circle').attr('class', 'sktx-marker-temp').attr('r', 4);
+        const mD = focus.append('circle').attr('class', 'sktx-marker-dwpt').attr('r', 4);
+        const tipG = focus.append('g');
+        const tipBox = tipG.append('rect').attr('class', 'sktx-tip-box').attr('rx', 4).attr('width', 158).attr('height', 56);
+        const tipText = tipG.append('text').attr('class', 'sktx-tip');
+
+        g.append('rect').attr('width', w).attr('height', h)
+            .style('fill', 'none').style('pointer-events', 'all')
+            .on('mouseover', () => focus.style('display', null))
+            .on('mouseout', () => focus.style('display', 'none'))
+            .on('mousemove', function (ev) {
+                const my = d3.pointer(ev, this)[1];
+                const p = y.invert(my);
+                let d = data[0], best = Infinity;
+                data.forEach(o => { const diff = Math.abs(o.press - p); if (diff < best) { best = diff; d = o; } });
+                const yy = y(d.press);
+                hline.attr('y1', yy).attr('y2', yy);
+                mT.attr('cx', sx(d.temp, d.press)).attr('cy', yy);
+                mD.attr('cx', sx(d.dwpt, d.press)).attr('cy', yy);
+
+                const rows = [
+                    `${Math.round(d.press)} hPa · ${Math.round(d.hght)} m`,
+                    `T ${d.temp.toFixed(1)}°C   Td ${d.dwpt.toFixed(1)}°C`,
+                    `Wind ${Math.round(d.wspd * 1.94384)} kt @ ${Math.round(d.wdir)}°`
+                ];
+                tipText.selectAll('tspan').remove();
+                rows.forEach((r, i) => tipText.append('tspan').attr('x', 8).attr('y', 16 + i * 16).text(r));
+
+                let tx = sx(d.temp, d.press) + 12;
+                if (tx + 158 > w) tx = w - 158 - 4;
+                if (tx < 0) tx = 4;
+                let ty = yy - 62;
+                if (ty < 0) ty = yy + 10;
+                tipG.attr('transform', `translate(${tx},${ty})`);
+            });
+    }
+
+    // Standard meteorological wind barb (speed in knots). Staff points toward wind source.
+    function drawBarb(g, cx, cy, dir, kt) {
+        const grp = g.append('g').attr('class', 'sktx-barb').attr('transform', `translate(${cx},${cy}) rotate(${dir})`);
+        if (kt < 2.5) { grp.append('circle').attr('r', 3).attr('fill', 'none'); return; }
+        const L = 24, step = 4;
+        grp.append('line').attr('x1', 0).attr('y1', 0).attr('x2', 0).attr('y2', -L);
+        let spd = Math.round(kt / 5) * 5, pos = -L;
+        const f50 = Math.floor(spd / 50); spd -= f50 * 50;
+        const f10 = Math.floor(spd / 10); spd -= f10 * 10;
+        const f5 = Math.floor(spd / 5);
+        for (let i = 0; i < f50; i++) { grp.append('polygon').attr('points', `0,${pos} 10,${pos + 2} 0,${pos + 5}`); pos += 6; }
+        for (let i = 0; i < f10; i++) { grp.append('line').attr('x1', 0).attr('y1', pos).attr('x2', 10).attr('y2', pos - 3); pos += step; }
+        for (let i = 0; i < f5; i++)  { grp.append('line').attr('x1', 0).attr('y1', pos).attr('x2', 5).attr('y2', pos - 2); pos += step; }
     }
 
     // ── INIT ─────────────────────────────────────────────────────────────────────
