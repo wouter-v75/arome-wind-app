@@ -7,7 +7,32 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.24.1/plotly.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Skew-T Log-P diagram library (self-contained D3 build) -->
+    <script src="https://unpkg.com/skewt@2.0.0/dist/index.iife.js"></script>
     <style>
+        /* ── skewt library styles (inlined so rendering never depends on a CDN CSS fetch) ── */
+        .skewt-container {
+            --skewt-temp-color: #e74c3c; --skewt-dwpt-color: #27ae60;
+            --skewt-grid-color: #dfdfdf; --skewt-zero-color: #aaa;
+            --skewt-axis-color: #2c3e50; --skewt-barb-color: #2c3e50;
+            --skewt-font-size: 12px; --skewt-tooltip-font-size: 11px;
+        }
+        .skewt-axis path, .skewt-axis line { fill: none; stroke: var(--skewt-axis-color); stroke-width: 1px; shape-rendering: crispEdges; }
+        .skewt-axis { fill: var(--skewt-axis-color); font-size: var(--skewt-font-size); }
+        .skewt-axis.skewt-ticks text { display: none; }
+        .skewt-gridline, .skewt-tempzero { stroke: var(--skewt-grid-color); stroke-width: 0.75px; fill: none; }
+        .skewt-tempzero { stroke: var(--skewt-zero-color); stroke-width: 1.25px; }
+        .skewt-temp { fill: none; stroke: var(--skewt-temp-color); stroke-width: 3px; }
+        .skewt-dwpt { fill: none; stroke: var(--skewt-dwpt-color); stroke-width: 3px; }
+        .skewt-skline { stroke-width: 1.8px; opacity: 0.8; }
+        .skewt-mean { stroke-width: 2.5px; }
+        .skewt-windbarb { stroke: var(--skewt-barb-color); stroke-width: 0.75px; fill: none; }
+        .skewt-flag { fill: var(--skewt-barb-color); }
+        .skewt-overlay { fill: none; pointer-events: all; }
+        .skewt-focus.skewt-tmpc circle { fill: var(--skewt-temp-color); stroke: none; }
+        .skewt-focus.skewt-dwpc circle { fill: var(--skewt-dwpt-color); stroke: none; }
+        .skewt-focus text { font-size: var(--skewt-tooltip-font-size); }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -349,6 +374,28 @@
             <div id="modelCompare100m" style="height:360px;margin-top:24px;"></div>
             <div id="modelCompareDir10m" style="height:360px;margin-top:24px;"></div>
         </div>
+        <div class="chart-container">
+            <div class="chart-title">🎈 Atmospheric Sounding — Skew-T Log-P</div>
+            <div class="chart-controls">
+                <div class="chart-control-group">
+                    <label for="skewt-location">📍 Location:</label>
+                    <select id="skewt-location" class="time-selector" onchange="renderSkewT()"></select>
+                </div>
+                <div class="chart-control-group">
+                    <label for="skewt-time">📅 Time:</label>
+                    <select id="skewt-time" class="time-selector" onchange="onSkewtTimeChange()"></select>
+                </div>
+                <div class="chart-control-group">
+                    <label>Model:</label>
+                    <span id="skewt-model-label" class="model-badge badge-ecmwf">—</span>
+                </div>
+            </div>
+            <div style="text-align:center;font-size:0.85rem;color:#7f8c8d;margin-bottom:10px;">
+                Red = temperature, green = dew point. Wind barbs (knots) on the right. Hover for values.
+                Upper-air follows the selected model, falling back to ECMWF.
+            </div>
+            <div id="skewtChart" style="max-width:560px;margin:0 auto;"></div>
+        </div>
     </div>
 
 </div><!-- /container -->
@@ -362,6 +409,8 @@
     let availableTimes = [];
     let selectedTimezone = 'UTC';
     let activeModel = 'AROME';
+    let skewtTimeIndex = 0;
+    let skewtInstance = null;
 
     // ── MODEL DEFINITIONS ────────────────────────────────────────────────────────
     // heights      = all wind heights requested / shown in the vertical profile
@@ -384,7 +433,8 @@
             modelParam: null,
             heights: [10, 100, 200],
             tableCols: [10, 100, 200],
-            upperHeight: 100
+            upperHeight: 100,
+            soundingLevels: [1000, 925, 850, 700, 600, 500, 400, 300, 250, 200, 150, 100, 50]
         },
         ICON: {
             key: 'ICON', label: 'ICON', subtitle: 'DWD seamless',
@@ -393,7 +443,8 @@
             modelParam: 'icon_seamless',
             heights: [10, 80, 120, 180],
             tableCols: [10, 80, 180],
-            upperHeight: 120
+            upperHeight: 120,
+            soundingLevels: [1000, 975, 950, 925, 900, 850, 800, 700, 600, 500, 400, 300, 250, 200, 150, 100, 70, 50, 30]
         }
     };
     const MODEL_ORDER = ['AROME', 'ECMWF', 'ICON'];
@@ -570,6 +621,7 @@
         createLocationSummaries();
         createWindComparisonChart();
         createWindProfileChart();
+        renderSkewT(); // sounding follows the active model (ECMWF fallback)
     }
 
     // ── TIME SELECTOR ────────────────────────────────────────────────────────────
@@ -658,6 +710,10 @@
             generateWindTables();
             displayComparison();
             showResults();
+            // Skew-T rendered after results are visible (library sizes from container width)
+            skewtTimeIndex = 0;
+            populateSkewtControls();
+            renderSkewT();
 
         } catch (err) {
             console.error('Fetch error:', err);
@@ -682,6 +738,15 @@
         const m = MODELS[modelKey];
         const params = [];
         m.heights.forEach(h => { params.push(`wind_speed_${h}m`, `wind_direction_${h}m`); });
+        // Pressure-level thermodynamics for the Skew-T sounding (ECMWF / ICON only)
+        if (m.soundingLevels) {
+            m.soundingLevels.forEach(p => {
+                params.push(
+                    `temperature_${p}hPa`, `relative_humidity_${p}hPa`,
+                    `geopotential_height_${p}hPa`, `wind_speed_${p}hPa`, `wind_direction_${p}hPa`
+                );
+            });
+        }
 
         let url = `${m.endpoint}?latitude=${latitude}&longitude=${longitude}` +
             `&hourly=${params.join(',')}` +
@@ -1159,6 +1224,133 @@
 
             Plotly.newPlot(cfg.div, traces, layout, { responsive: true });
         });
+    }
+
+    // ── SKEW-T SOUNDING PANE ─────────────────────────────────────────────────────
+    // Interactive Skew-T log-P (skewt library). Profile follows the active model,
+    // falling back to ECMWF (AROME has no upper-air data). Dewpoint is derived from
+    // temperature + relative humidity; wind is converted to m/s as the library expects.
+
+    function dewpointFromRH(tempC, rh) {
+        const a = 17.625, b = 243.04;
+        const r = Math.max(1, Math.min(100, rh));
+        const alpha = Math.log(r / 100) + (a * tempC) / (b + tempC);
+        return (b * alpha) / (a - alpha);
+    }
+
+    // Does a model have usable sounding data for a location at the selected time?
+    function hasSounding(locNum, modelKey) {
+        const m = MODELS[modelKey];
+        const surf = windData[locNum] && windData[locNum].surfaceByModel[modelKey];
+        if (!m.soundingLevels || !surf || !surf.hourly) return false;
+        return m.soundingLevels.some(p => {
+            const t = surf.hourly[`temperature_${p}hPa`];
+            return t && t[skewtTimeIndex] != null;
+        });
+    }
+
+    // Choose the sounding model: active model if it has data, else ECMWF, else ICON.
+    function soundingModelFor(locNum) {
+        return [activeModel, 'ECMWF', 'ICON'].find(k => MODELS[k] && hasSounding(locNum, k)) || null;
+    }
+
+    // Build GSD-format sounding array for a location/model at the selected time.
+    function buildSounding(locNum, modelKey) {
+        const surf = windData[locNum].surfaceByModel[modelKey];
+        const h = surf.hourly;
+        const idx = skewtTimeIndex;
+        const arr = [];
+        MODELS[modelKey].soundingLevels.forEach(p => {
+            const t  = h[`temperature_${p}hPa`]?.[idx];
+            const gh = h[`geopotential_height_${p}hPa`]?.[idx];
+            if (t == null || gh == null) return;
+            const rh = h[`relative_humidity_${p}hPa`]?.[idx];
+            const ws = h[`wind_speed_${p}hPa`]?.[idx];      // km/h
+            const wd = h[`wind_direction_${p}hPa`]?.[idx];
+            const dwpt = rh != null ? Math.min(dewpointFromRH(t, rh), t) : t;
+            arr.push({
+                press: p,
+                hght: gh,
+                temp: t,
+                dwpt: dwpt,
+                wdir: wd != null ? wd : 0,
+                wspd: ws != null ? ws / 3.6 : 0            // km/h → m/s (library expects m/s)
+            });
+        });
+        return arr; // already ordered surface→top (descending pressure)
+    }
+
+    function populateSkewtControls() {
+        const locSel = document.getElementById('skewt-location');
+        const timeSel = document.getElementById('skewt-time');
+        const names = { 1:'🔴 Location 1', 2:'🟢 Location 2', 3:'🟠 Location 3' };
+
+        locSel.innerHTML = '';
+        Object.keys(windData).forEach(k => {
+            const o = document.createElement('option');
+            o.value = k; o.textContent = names[k] || `Location ${k}`;
+            locSel.appendChild(o);
+        });
+
+        timeSel.innerHTML = '';
+        if (!availableTimes.length) {
+            timeSel.innerHTML = '<option value="0">No times</option>';
+        } else {
+            availableTimes.forEach((t, i) => {
+                const d = new Date(t);
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = d.toLocaleString('en-GB', {
+                    timeZone: selectedTimezone, month: 'short', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                }) + (selectedTimezone === 'UTC' ? ' UTC' : ` (${selectedTimezone})`);
+                timeSel.appendChild(opt);
+            });
+        }
+        timeSel.value = String(skewtTimeIndex);
+    }
+
+    function onSkewtTimeChange() {
+        skewtTimeIndex = parseInt(document.getElementById('skewt-time').value, 10) || 0;
+        renderSkewT();
+    }
+
+    function renderSkewT() {
+        const container = document.getElementById('skewtChart');
+        const labelEl   = document.getElementById('skewt-model-label');
+        if (!container) return;
+
+        if (skewtInstance) { skewtInstance.destroy(); skewtInstance = null; }
+        container.innerHTML = '';
+
+        if (!window.skewt || !window.skewt.SkewT) {
+            container.innerHTML = `<div class="placeholder-content"><div class="placeholder-icon">⚠️</div><div class="placeholder-text">Skew-T library failed to load</div><div class="placeholder-subtext">Check your internet connection and reload.</div></div>`;
+            return;
+        }
+
+        const locSel = document.getElementById('skewt-location');
+        const locNum = (locSel && locSel.value) || Object.keys(windData)[0];
+        if (!locNum || !windData[locNum]) return;
+
+        const modelKey = soundingModelFor(locNum);
+        if (!modelKey) {
+            labelEl.textContent = '—';
+            labelEl.className = 'model-badge';
+            container.innerHTML = `<div class="placeholder-content"><div class="placeholder-icon">🚫</div><div class="placeholder-text">No upper-air data</div><div class="placeholder-subtext">Neither the selected model nor ECMWF returned pressure-level data for this point/time.</div></div>`;
+            return;
+        }
+
+        labelEl.textContent = MODELS[modelKey].label;
+        labelEl.className = 'model-badge ' + MODELS[modelKey].badgeClass;
+
+        const data = buildSounding(locNum, modelKey);
+        if (data.length < 3) {
+            container.innerHTML = `<div class="placeholder-content"><div class="placeholder-icon">❌</div><div class="placeholder-text">Not enough levels</div></div>`;
+            return;
+        }
+
+        skewtInstance = new window.skewt.SkewT(container, { unit: 'kt' });
+        skewtInstance.plot(data);
     }
 
     // ── INIT ─────────────────────────────────────────────────────────────────────
